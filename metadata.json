@@ -1,0 +1,6 @@
+{
+  "name": "Simples Apuração RTC",
+  "description": "Cálculo, apuração e diagnóstico Inteligente (Gemini) de créditos e débitos de IBS/CBS nos regimes RPA, Simples Nacional e MEI sob a LC 214/2025.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
