@@ -32,7 +32,14 @@ export default function App() {
   const [regime, setRegime] = useState<TaxRegime>("Simples Nacional");
   
   // Tab control
-  const [activeTab, setActiveTab] = useState<"visao" | "simulador" | "xml" | "conformidade" | "ai">("visao");
+  const [activeTab, setActiveTab] = useState<"visao" | "simulador" | "xml" | "conformidade" | "ai" | "tutorial">("visao");
+
+  // States for Supplier non-compliance letter
+  const [supplierName, setSupplierName] = useState("");
+  const [supplierCnpj, setSupplierCnpj] = useState("");
+  const [supplierEmail, setSupplierEmail] = useState("");
+  const [supplierDocKey, setSupplierDocKey] = useState("");
+  const [supplierDocValue, setSupplierDocValue] = useState("");
 
   // Global manual/assumed indicators (when no precise XML is present)
   const [totalSales, setTotalSales] = useState<number>(180000);
@@ -428,6 +435,7 @@ export default function App() {
               { id: "xml", label: "Análise de XMLs Fiscais", icon: FileText },
               { id: "conformidade", label: "Filtro de Inconformidades", icon: AlertTriangle },
               { id: "ai", label: "Dossiê Inteligente AI", icon: Cpu },
+              { id: "tutorial", label: "Tutorial de Uso", icon: HelpCircle },
             ].map(tab => {
               const Icon = tab.icon;
               const isSelected = activeTab === tab.id;
@@ -935,53 +943,275 @@ export default function App() {
                 transition={{ duration: 0.2 }}
                 className="space-y-6"
               >
+                {/* Intro banner */}
                 <div className="bg-[#10162a]/90 border border-slate-800/80 p-6 rounded-2xl space-y-4">
-                  <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-1.5">
-                    <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                    Auditoria de Conformidade Legal (Ano Fiscal 2026+)
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Identificação de notas fiscais emitidas por fornecedores do regime RPA que omitiram o destaque obrigatório de IBS ou CBS nas operações internas e interestaduais sob as regras da Lei Complementar 214/2025.
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-1.5">
+                        <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                        Portal de Inconformidades & Notificação de Fornecedores
+                      </h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Identifique notas de fornecedores RPA sem destaque dos tributos IBS e CBS regulados pela LC 214/2025. Gere notificações extrajudiciais instantâneas exigindo o preenchimento correto das tags fiscais para garantir seus créditos de 26,5%.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                  <div className="pt-2">
-                    {nonCompliantDocs.length === 0 ? (
-                      <div className="p-10 border border-dashed border-slate-800 rounded-xl text-center space-y-2">
-                        <FileCheck className="w-10 h-10 text-emerald-500 mx-auto opacity-70" />
-                        <p className="text-xs text-slate-300 font-semibold">Nenhuma inconformidade de destaque tributário identificada.</p>
-                        <p className="text-[10px] text-slate-500">Todos os documentos analisados no regime RPA possuem as tags de IBS/CBS preenchidas.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="bg-rose-950/20 border border-rose-500/20 p-3.5 rounded-xl text-rose-300 text-xs flex gap-2">
-                          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="font-semibold">Documentos RPA com Alíquota ausente</p>
-                            <p className="text-[11px] text-rose-400/90 mt-0.5">Foi constatado que {nonCompliantDocs.length} documentos não apresentam valores válidos de IBS ou CBS nos XMLs originais. Isso impede parcial ou totalmente o aproveitamento de créditos fiscais legítimos de sua empresa.</p>
-                          </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Left Column: Non-compliant list & Input Form */}
+                  <div className="lg:col-span-5 space-y-6">
+                    {/* List of non-compliant invoices parsed from XML */}
+                    <div className="bg-[#10162a]/90 border border-slate-800/80 p-4 rounded-xl space-y-3">
+                      <p className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        Notas Fiscais Avaliadas com Alíquota Omitida
+                      </p>
+                      
+                      {nonCompliantDocs.length === 0 ? (
+                        <div className="p-6 border border-dashed border-slate-800 rounded-lg text-center space-y-1 bg-slate-900/15">
+                          <CheckCircle className="w-6 h-6 text-emerald-500 mx-auto" />
+                          <p className="text-[11px] text-slate-300 font-medium">Nenhuma inconformidade no lote atual</p>
+                          <p className="text-[9px] text-slate-500">Todos os documentos analisados no regime RPA apresentam destaque de impostos.</p>
                         </div>
-
-                        <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden bg-slate-900/40">
+                      ) : (
+                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                           {nonCompliantDocs.map((doc, idx) => (
-                            <div key={doc.id || idx} className="p-3 text-xs flex justify-between items-center bg-slate-950/20 hover:bg-slate-950/55 transition">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-bold bg-rose-950 border border-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-mono">
-                                    RPA NÍTIDO SEM IMPOSTO
-                                  </span>
-                                  <span className="font-bold text-slate-200">{doc.emitente || "Fornecedor"}</span>
-                                </div>
-                                <p className="text-[10px] text-slate-500 font-mono">Chave: {doc.access_key || doc.chave || "NF-e não autenticada"}</p>
+                            <div 
+                              key={doc.id || idx} 
+                              className="p-2.5 text-[11px] bg-slate-950/40 border border-slate-800 hover:border-indigo-500/40 rounded-lg flex justify-between items-center transition gap-2"
+                            >
+                              <div className="space-y-0.5 truncate">
+                                <p className="font-bold text-slate-200 truncate">{doc.emitente}</p>
+                                <p className="text-[9px] text-slate-500 font-mono truncate">Chave: {doc.chave.slice(0, 12)}...{doc.chave.slice(-10)}</p>
+                                <p className="text-[9px] text-amber-400 font-mono">Simulado: R$ {doc.totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
                               </div>
-                              <div className="text-right font-mono text-amber-500">
-                                <p className="text-xs font-bold text-slate-300">R$ {doc.totalVal.toLocaleString()}</p>
-                                <p className="text-[10px] text-slate-500">Crédito Perdido: R$ {(doc.totalVal * 0.265).toLocaleString()}</p>
-                              </div>
+                              <button
+                                onClick={() => {
+                                  setSupplierName(doc.emitente);
+                                  setSupplierCnpj(doc.emitCnpj || "20.123.456/0001-00");
+                                  setSupplierDocKey(doc.chave);
+                                  setSupplierDocValue(doc.totalVal.toFixed(2));
+                                }}
+                                className="px-2 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 rounded border border-indigo-500/20 text-[9px] font-bold shrink-0 transition"
+                              >
+                                Preencher Carta
+                              </button>
                             </div>
                           ))}
                         </div>
+                      )}
+                    </div>
+
+                    {/* Notification fields form */}
+                    <div className="bg-[#10162a]/90 border border-slate-800/80 p-5 rounded-xl space-y-4">
+                      <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                        Campos de Notificação do Fornecedor
+                      </p>
+
+                      <div className="space-y-3 font-sans">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nome / Razão Social do Fornecedor</label>
+                          <input 
+                            type="text"
+                            value={supplierName}
+                            onChange={(e) => setSupplierName(e.target.value)}
+                            placeholder="Ex: Fornecedor de Insumos Industriais S.A."
+                            className="w-full text-xs bg-slate-950/80 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 focus:border-indigo-500 outline-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">CNPJ do Fornecedor</label>
+                            <input 
+                              type="text"
+                              value={supplierCnpj}
+                              onChange={(e) => setSupplierCnpj(e.target.value)}
+                              placeholder="00.000.000/0000-00"
+                              className="w-full text-xs font-mono bg-slate-950/80 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 focus:border-indigo-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">E-mail do Fornecedor</label>
+                            <input 
+                              type="email"
+                              value={supplierEmail}
+                              onChange={(e) => setSupplierEmail(e.target.value)}
+                              placeholder="fiscal@fornecedor.com.br"
+                              className="w-full text-xs bg-slate-950/80 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 focus:border-indigo-500 outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Chave de Acesso / Nota</label>
+                            <input 
+                              type="text"
+                              value={supplierDocKey}
+                              onChange={(e) => setSupplierDocKey(e.target.value)}
+                              placeholder="Chave NF-e de 44 dígitos"
+                              className="w-full text-xs font-mono bg-slate-950/80 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 focus:border-indigo-500 outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Total (R$)</label>
+                            <input 
+                              type="text"
+                              value={supplierDocValue}
+                              onChange={(e) => setSupplierDocValue(e.target.value)}
+                              placeholder="Ex: 1545.90"
+                              className="w-full text-xs font-mono bg-slate-950/80 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 focus:border-indigo-500 outline-none"
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )}
+
+                      {/* Default fillers banner if nothing entered */}
+                      {!supplierName && (
+                        <p className="text-[10px] text-slate-500 italic">
+                          Dica: Clique no botão "Preencher Carta" em uma nota inconformada acima para carregar as chaves fiscais automaticamente no formulário.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Interactive Letter Preview Sheet & Action Buttons */}
+                  <div className="lg:col-span-7 space-y-4">
+                    {/* Action Panel for Letter */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-900/60 border border-slate-800 rounded-xl">
+                      <span className="text-[11px] font-semibold text-slate-300">
+                        Visualização e Ações de Conformação
+                      </span>
+                      <div className="flex gap-2">
+                        {/* Copy button */}
+                        <button
+                          onClick={() => {
+                            const letterEl = document.getElementById("letter-sheet-text");
+                            if (letterEl) {
+                              navigator.clipboard.writeText(letterEl.innerText);
+                              alert("Texto da Carta de Inconformidade copiado com sucesso!");
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950 text-indigo-300 border border-indigo-500/20 hover:bg-indigo-900 rounded-lg text-[10px] font-extrabold transition cursor-pointer"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Copiar Texto
+                        </button>
+
+                        {/* Send Email button */}
+                        <button
+                          onClick={() => {
+                            const letterEl = document.getElementById("letter-sheet-text");
+                            const text = letterEl ? letterEl.innerText : "";
+                            const subject = `NOTIFICAÇÃO DE INCONFORMIDADE FISCAL (IBS/CBS) - NF-e ${supplierDocKey || "REFORMA TRIBUTÁRIA"}`;
+                            window.open(`mailto:${supplierEmail || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-950 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-900 rounded-lg text-[10px] font-extrabold transition cursor-pointer"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Enviar por E-mail
+                        </button>
+
+                        {/* Print / Save button */}
+                        <button
+                          onClick={() => {
+                            const printWindow = window.open("", "_blank");
+                            const letterEl = document.getElementById("letter-sheet-text");
+                            if (printWindow && letterEl) {
+                              printWindow.document.write(`
+                                <html>
+                                  <head>
+                                    <title>Carta de Inconformidade Tributária</title>
+                                    <style>
+                                      body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+                                      .letter { max-width: 800px; margin: 0 auto; border: 1px solid #cbd5e1; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+                                      h2 { text-transform: uppercase; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; font-size: 16px; margin-bottom: 25px; }
+                                      .meta { margin-bottom: 20px; font-size: 13px; }
+                                      p { margin-bottom: 15px; font-size: 13px; }
+                                      .point { font-weight: bold; margin-left: 20px; }
+                                    </style>
+                                  </head>
+                                  <body>
+                                    <div class="letter">
+                                      ${letterEl.innerHTML.replace(/\n/g, "<br>")}
+                                    </div>
+                                    <script>window.print();</script>
+                                  </body>
+                                </html>
+                              `);
+                              printWindow.document.close();
+                            }
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-[10px] font-extrabold transition cursor-pointer"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          Imprimir
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Paper Sheet Rendering */}
+                    <div className="bg-white text-slate-800 p-8 rounded-xl shadow-2xl border border-slate-200 font-sans leading-relaxed text-xs overflow-x-auto min-h-[500px]">
+                      <div id="letter-sheet-text" className="max-w-2xl mx-auto space-y-4">
+                        <div className="text-center font-extrabold text-[13px] text-slate-900 border-b-2 border-indigo-600 pb-3 uppercase tracking-wide">
+                          CARTA DE NOTIFICAÇÃO DE INCONFORMIDADE TRIBUTÁRIA (IVA DUAL - IBS/CBS)
+                        </div>
+
+                        <div className="space-y-1 text-[11px] text-slate-600 font-sans pb-3">
+                          <p><strong>Destinatário:</strong> {supplierName || "___________________________________________"}</p>
+                          <p><strong>CNPJ do Fornecedor:</strong> {supplierCnpj || "___________________________"}</p>
+                          <p><strong>E-mail Comercial/Fiscal:</strong> <span className={supplierEmail ? "" : "text-slate-400"}>{supplierEmail || "[Preencha o e-mail ou utilize o link acima]"}</span></p>
+                          <p><strong>Assunto:</strong> Solicitação urgente de retificação fiscal (Destaque de IBS/CBS - Ano Fiscal 2026+)</p>
+                          <p><strong>Referência:</strong> Lei Complementar nº 214/2025 e Reforma Tributária (Emenda Constitucional 132/2023)</p>
+                        </div>
+
+                        <p className="text-justify font-sans leading-relaxed text-[11px]">
+                          Prezado departamento tributário e faturamento da empresa <strong>{supplierName || "______________________"}</strong>,
+                        </p>
+
+                        <p className="text-justify text-[11px] leading-relaxed">
+                          Serve a presente notificação extrajudicial para solicitar, em caráter de urgência, a revisão e correção da nota fiscal correspondente à operação identificada pelos dados abaixo indicados:
+                        </p>
+
+                        <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg space-y-1 text-[11px] font-mono select-all">
+                          <p><strong>• Chave de Acesso da Nota:</strong> {supplierDocKey || "________________________________________________"}</p>
+                          <p><strong>• Valor Total Declarado:</strong> R$ {supplierDocValue ? parseFloat(supplierDocValue).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "_________,___"}</p>
+                          <p><strong>• Alíquota Dual Esperada:</strong> IBS (17,7%) e CBS (8,8%) - Total de 26,5% de aproveitamento de crédito fiscal</p>
+                        </div>
+
+                        <p className="text-justify text-[11px] leading-relaxed">
+                          Verificamos por análise de lote no nosso portal que, embora vossa instituição esteja devidamente registrada sob o regime de **Regime Tecnológico de Apuração (RPA - Lucro Real/Presumido)**, o referido documento foi emitido e entregue à nossa organização **sem o destaque legítimo de IBS e CBS** em suas respectivas tags e campos tributários nativos XML.
+                        </p>
+
+                        <p className="text-justify text-[11px] leading-relaxed">
+                          Conforme os mandamentos tributários trazidos pela **Lei Complementar de Regulamentação da Reforma Tributária (LC 214/2025)**, o fornecedor que não promove o correto destaque do IVA Dual impede a apropriação dos créditos financeiros cumulativos correspondentes previstos na legislação de faturamento. Esta omissão gera grave prejuízo financeiro direto no valor estimado de **R$ {supplierDocValue ? (parseFloat(supplierDocValue) * 0.265).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "_________,___"}** em nossa escrituração consolidada.
+                        </p>
+
+                        <p className="text-justify text-[11px] leading-relaxed font-bold">
+                          Desta forma, para evitar perdas tributárias que prejudicam nossa colaboração comercial, solicitamos que nos enviem no prazo de até 72 horas úteis:
+                        </p>
+
+                        <div className="pl-4 space-y-1.5 text-[11px] text-slate-700">
+                          <p>1. Transmissão de <strong>Nota Fiscal Retificadora / de Ajuste</strong> destacando o valor correspondente de IBS e CBS;</p>
+                          <p>2. Ou, justificativa devidamente embasada pelo seu setor de conformidade fiscal justificando a incidência de regimes especiais ou imunidade aplicáveis à operação analisada.</p>
+                        </div>
+
+                        <p className="text-justify text-[11px] leading-relaxed">
+                          Contamos com o vosso profissionalismo fiscal e com a presteza de sempre no ambiente do novo ecossistema tributário brasileiro.
+                        </p>
+
+                        <p className="pt-4 text-justify text-[11px]">
+                          Atenciosamente,
+                        </p>
+
+                        <div className="pt-2 text-[11.5px] font-sans">
+                          <p className="font-bold">{companyName}</p>
+                          <p className="text-slate-500 font-mono">CNPJ da Empresa Contratante: {cnpj}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -1074,6 +1304,159 @@ export default function App() {
                       </div>
                     </div>
                   )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Tab 6: Interactive Tutorial */}
+            {activeTab === "tutorial" && (
+              <motion.div
+                key="tutorial"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-6"
+              >
+                {/* Header banner */}
+                <div className="bg-gradient-to-r from-slate-900 to-[#101526] border border-slate-800/80 p-6 rounded-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <HelpCircle className="w-48 h-48 text-indigo-400" />
+                  </div>
+                  <div className="max-w-2xl space-y-2 relative z-10">
+                    <span className="inline-block bg-indigo-950 text-indigo-400 border border-indigo-500/20 text-[10px] uppercase font-bold px-2 py-0.5 rounded tracking-widest">
+                      Manual de Operações
+                    </span>
+                    <h3 className="text-sm font-extrabold text-slate-100 flex items-center gap-1.5">
+                      Tutorial de Uso - Simples Apuração RTC
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                      Entenda como maximizar o uso desta plataforma de inteligência fiscal para simular, auditar, corrigir inconformidades de fornecedores e emitir pareceres estratégicos sobre a Reforma Tributária.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Steps Accordion/Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Step 1 */}
+                  <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">01</span>
+                      <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
+                        <FileText className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    </div>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 1: Importar os XMLs</p>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed">
+                      Acesse a aba <strong>Análise de XMLs Fiscais</strong> e arraste ou selecione os arquivos XML das suas notas. A plataforma suporta em lote:
+                    </p>
+                    <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
+                      <li><strong>NF-e</strong> (Notas de Mercadorias)</li>
+                      <li><strong>NFC-e</strong> (Cupom de Consumidor)</li>
+                      <li><strong>CT-e</strong> (Conhecimento de Transporte)</li>
+                      <li><strong>NFS-e</strong> (Notas de Serviços de Prefeituras)</li>
+                    </ul>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">02</span>
+                      <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
+                        <Settings className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    </div>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 2: Configurar Empresa</p>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed">
+                      Ajuste os dados cadastrais da sua empresa na barra lateral ou nos painéis superiores para guiar a lógica fiscal:
+                    </p>
+                    <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
+                      <li><strong>Razão Social</strong> e <strong>CNPJ</strong> para que o leitor diferencie automaticamente Entradas (compras) e Saídas (vendas).</li>
+                      <li><strong>Regime Tributário</strong> (Simples Nacional vs RPA) para calcular a sua apuração dual de alíquotas.</li>
+                    </ul>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">03</span>
+                      <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
+                        <TrendingUp className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    </div>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 3: Simular Parâmetros</p>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed">
+                      Na aba <strong>Simulador de Parâmetros</strong>, manipule as variáveis para calcular o impacto da reforma que começa em 2026:
+                    </p>
+                    <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
+                      <li>Defina o limite de compras de fornecedores do Simples para ver o efeito da perda de créditos de IBS/CBS.</li>
+                      <li>Simule o recolhimento do IVA \"Por Fora\" do Simples Nacional para restaurar competitividade nas vendas B2B.</li>
+                    </ul>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">04</span>
+                      <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
+                        <AlertTriangle className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    </div>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 4: Auditoria de Notas</p>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed">
+                      Navegue para a aba <strong>Filtro de Inconformidades</strong>. O sistema filtra automaticamente as notas RPA de entrada que não destacaram IBS (17,7%) ou CBS (8,8%):
+                    </p>
+                    <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
+                      <li>Visualize o valor exato do <strong>crédito fiscal perdido</strong>.</li>
+                      <li>Clique em <strong>\"Preencher Carta\"</strong> para carregar os dados de forma instantânea no gerador de notificação.</li>
+                    </ul>
+                  </div>
+
+                  {/* Step 5 */}
+                  <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">05</span>
+                      <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
+                        <CheckCircle className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    </div>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 5: Enviar Notificação</p>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed font-sans">
+                      Com os dados do fornecedor carregados ou digitados manualmente:
+                    </p>
+                    <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
+                      <li>Clique em <strong>Copiar Texto</strong> para colar em qualquer ferramenta de chat institucional ou portal fiscal.</li>
+                      <li>Use o botão <strong>Enviar por E-mail</strong> para disparar via cliente nativo.</li>
+                      <li>Use <strong>Imprimir</strong> para gerar um PDF formal assinado pela diretoria.</li>
+                    </ul>
+                  </div>
+
+                  {/* Step 6 */}
+                  <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">06</span>
+                      <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
+                        <Cpu className="w-4 h-4 text-indigo-400" />
+                      </div>
+                    </div>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 6: Parecer & Exportação</p>
+                    <p className="text-[11.5px] text-slate-400 leading-relaxed font-sans">
+                      Para gerar a consolidação e fundamentação legal para a junta diretiva:
+                    </p>
+                    <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
+                      <li>Vá até a aba <strong>Dossiê Inteligente AI</strong> e clique em \"Gerar Parecer Inteligente\".</li>
+                      <li>Uma análise gerada sob medida pelo Gemini apoiará na tomada de decisão fiscal estratégica.</li>
+                      <li>Após gerado, você pode exportar tudo formatado em <strong>PDF Certificado</strong>.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Direct support or legal tip */}
+                <div className="p-4 bg-indigo-950/20 border border-indigo-500/20 text-indigo-300 text-xs rounded-xl flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-indigo-400 shrink-0" />
+                  <p className="font-sans text-[11px] leading-normal">
+                    <strong>Alerta de Conformidade Legal:</strong> O destaque de IBS e CBS é um direito do adquirente nas operações sujeitas ao regime não-cumulativo da EC 132/2023. O envio da notificação regulariza os saldos credores de insumos industriais de forma diplomática com o faturamento de seus fornecedores parceiros.
+                  </p>
                 </div>
               </motion.div>
             )}

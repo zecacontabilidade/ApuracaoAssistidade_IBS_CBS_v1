@@ -14,6 +14,8 @@ export interface FiscalDocument {
   rateCbs: number;
   description: string;
   cfop?: string; // Código Fiscal de Operações e Prestações (e.g. 5102, 1102)
+  emitCnpj?: string;
+  destCnpj?: string;
 }
 
 export interface SimulationState {

@@ -228,7 +228,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
       rateIbs,
       rateCbs,
       description: `Documento importado via parser XML (${filename})`,
-      cfop
+      cfop,
+      emitCnpj,
+      destCnpj
     };
   };
 
