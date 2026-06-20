@@ -155,15 +155,39 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     let totalValNode = xmlDoc.getElementsByTagName("vNF")[0] || xmlDoc.getElementsByTagName("vProd")[0] || xmlDoc.getElementsByTagName("vServ")[0];
     let totalVal = totalValNode ? Number(totalValNode.textContent || 0) : 1000.00;
 
-    // Detect direction based on user's selected CNPJ
-    // Default to 'entrada' if user is the recipient, or 'saida' if user is issuer
-    const cleanedMyCnpj = myCnpj.replace(/\D/g, "");
-    const cleanedDestCnpj = destCnpj.replace(/\D/g, "");
-    const cleanedEmitCnpj = emitCnpj.replace(/\D/g, "");
+    // CFOP Extraction (done early to reliably determine direction)
+    let cfopNode = xmlDoc.getElementsByTagName("CFOP")[0] || xmlDoc.getElementsByTagName("cfop")[0];
+    let cfop = cfopNode?.textContent ? cfopNode.textContent.trim() : "";
+    if (cfop.length > 4) {
+      cfop = cfop.slice(0, 4);
+    }
 
+    // Detect direction based on CFOP prefix if available (Standard Brazilian Tax Rules)
+    // 5xxx, 6xxx, 7xxx = "saida" (Débitos)
+    // 1xxx, 2xxx, 3xxx = "entrada" (Créditos)
     let direction: "entrada" | "saida" = "entrada";
-    if (cleanedEmitCnpj === cleanedMyCnpj) {
-      direction = "saida";
+    if (cfop) {
+      const firstDigit = cfop.charAt(0);
+      if (["5", "6", "7"].includes(firstDigit)) {
+        direction = "saida";
+      } else if (["1", "2", "3"].includes(firstDigit)) {
+        direction = "entrada";
+      } else {
+        // Fallback to CNPJ comparison
+        const cleanedMyCnpj = myCnpj.replace(/\D/g, "");
+        const cleanedEmitCnpj = emitCnpj.replace(/\D/g, "");
+        if (cleanedEmitCnpj === cleanedMyCnpj) {
+          direction = "saida";
+        }
+      }
+    } else {
+      // Fallback to CNPJ matching
+      const cleanedMyCnpj = myCnpj.replace(/\D/g, "");
+      const cleanedEmitCnpj = emitCnpj.replace(/\D/g, "");
+      if (cleanedEmitCnpj === cleanedMyCnpj) {
+        direction = "saida";
+      }
+      cfop = direction === "entrada" ? "1102" : "5102";
     }
 
     // Subtag values for IBS/CBS
@@ -190,13 +214,6 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     if (filename.toLowerCase().includes("ct")) docType = "CT-e";
     if (filename.toLowerCase().includes("nfc")) docType = "NFC-e";
     if (filename.toLowerCase().includes("nfs") || filename.toLowerCase().includes("servico")) docType = "NFS-e";
-
-    // CFOP Extraction
-    let cfopNode = xmlDoc.getElementsByTagName("CFOP")[0] || xmlDoc.getElementsByTagName("cfop")[0];
-    let cfop = cfopNode?.textContent ? cfopNode.textContent.trim() : (direction === "entrada" ? "1102" : "5102");
-    if (cfop.length > 4) {
-      cfop = cfop.slice(0, 4);
-    }
 
     return {
       id: Math.random().toString(36).substring(7),

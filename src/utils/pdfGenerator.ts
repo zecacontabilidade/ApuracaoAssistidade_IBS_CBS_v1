@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { CfopGroupTotals, TaxRegime } from "../types";
+import { CfopGroupTotals, TaxRegime, FiscalDocument } from "../types";
 
 interface ExportPdfParams {
   companyName: string;
@@ -13,6 +13,7 @@ interface ExportPdfParams {
   calculatedCreditsIbs: number;
   calculatedCreditsCbs: number;
   hasDocs: boolean;
+  documents: FiscalDocument[];
   cfopGroups: CfopGroupTotals[];
   aiAnalysis: string | null;
 }
@@ -30,6 +31,7 @@ export function generateReportPDF(params: ExportPdfParams) {
     calculatedCreditsIbs,
     calculatedCreditsCbs,
     hasDocs,
+    documents,
     cfopGroups,
     aiAnalysis
   } = params;
@@ -304,11 +306,75 @@ export function generateReportPDF(params: ExportPdfParams) {
 
   y += 24;
 
+  // 3.5. CONSOLIDAÇÃO POR TIPO DE DOCUMENTO FISCAL
+  checkNewPage(45);
+  doc.setFont("Helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42);
+  doc.text("2. Consolidação de Entradas/Saídas por Tipo de Documento Fiscal", margin, y);
+
+  doc.setFillColor(79, 70, 229);
+  doc.rect(margin, y + 1.5, 115, 0.6, "F");
+
+  y += 6;
+
+  // Header Table
+  doc.setFillColor(51, 65, 85);
+  doc.rect(margin, y, contentWidth, 6, "F");
+  doc.setFont("Helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(255, 255, 255);
+  doc.text("TIPO DOCUMENTO", margin + 4, y + 4);
+  doc.text("FLUXO FISCAL", margin + 40, y + 4);
+  doc.text("QUANTIDADE", margin + 80, y + 4);
+  doc.text("VALOR TOTAL ACUMULADO", margin + 115, y + 4);
+
+  y += 6;
+
+  const docTypes = ["NF-e", "NFC-e", "CT-e", "NFS-e"];
+  const flows: ("entrada" | "saida")[] = ["entrada", "saida"];
+
+  flows.forEach((flow) => {
+    docTypes.forEach((t) => {
+      const docsFiltered = documents.filter(d => d.direction === flow && d.type === t);
+      const totalVal = docsFiltered.reduce((sum, d) => sum + d.totalVal, 0);
+      const count = docsFiltered.length;
+
+      if (count > 0 || hasDocs) {
+        checkNewPage(6.5);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(margin, y, contentWidth, 6.5, "F");
+        doc.setDrawColor(241, 245, 249);
+        doc.line(margin, y + 6.5, margin + contentWidth, y + 6.5);
+
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(7);
+        doc.setTextColor(15, 23, 42);
+        doc.text(t, margin + 4, y + 4);
+
+        doc.setTextColor(flow === "entrada" ? 16 : 79, flow === "entrada" ? 185 : 70, flow === "entrada" ? 129 : 229);
+        doc.text(flow === "entrada" ? "ENTRADA (Compra/Crédito)" : "SAÍDA (Venda/Débito)", margin + 40, y + 4);
+
+        doc.setFont("Helvetica", "normal");
+        doc.setTextColor(71, 85, 105);
+        doc.text(`${count} documento(s)`, margin + 80, y + 4);
+
+        doc.setFont("Helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text(`R$ ${formatBRL(totalVal)}`, margin + 115, y + 4);
+
+        y += 6.5;
+      }
+    });
+  });
+
+  y += 15;
+
   // 4. DETALHAMENTO CFOP TABLE
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
-  doc.text("2. Apuração e Consolidação de Entrada/Saída por CFOP", margin, y);
+  doc.text("3. Apuração e Consolidação de Entrada/Saída por CFOP", margin, y);
 
   doc.setFillColor(79, 70, 229);
   doc.rect(margin, y + 1.5, 92, 0.6, "F");
@@ -379,7 +445,7 @@ export function generateReportPDF(params: ExportPdfParams) {
     doc.setFont("Helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
-    doc.text("3. Parecer Técnico & Recomendações (IA Gemini Fiscal)", margin, y);
+    doc.text("4. Parecer Técnico & Recomendações (IA Gemini Fiscal)", margin, y);
 
     doc.setFillColor(79, 70, 229);
     doc.rect(margin, y + 1.5, 95, 0.6, "F");

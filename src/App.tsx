@@ -248,6 +248,7 @@ export default function App() {
       calculatedCreditsIbs,
       calculatedCreditsCbs,
       hasDocs,
+      documents,
       cfopGroups,
       aiAnalysis
     });
@@ -731,26 +732,72 @@ export default function App() {
 
                   {/* Summary Cards by CFOP */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div className="p-4 bg-emerald-950/10 border border-emerald-500/20 rounded-xl font-sans">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-emerald-400">Total de Entradas (Compra) por CFOP</span>
-                        <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono">CRÉDITO</span>
+                    <div className="p-4 bg-emerald-950/10 border border-emerald-500/20 rounded-xl font-sans flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-emerald-400">Total de Entradas (Compra) por CFOP</span>
+                          <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono">CRÉDITO</span>
+                        </div>
+                        <p className="text-xl font-mono font-bold text-emerald-300 mt-2">
+                          R$ {cfopGroups.filter(g => g.direction === "entrada").reduce((sum, g) => sum + g.totalVal, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-sans">Soma de todos os insumos operacionais e mercadorias adquiridas agrupados por CFOP.</p>
                       </div>
-                      <p className="text-xl font-mono font-bold text-emerald-300 mt-2">
-                        R$ {cfopGroups.filter(g => g.direction === "entrada").reduce((sum, g) => sum + g.totalVal, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-1 font-sans">Soma de todos os insumos operacionais e mercadorias adquiridas agrupados por CFOP.</p>
+
+                      {/* Total de Entradas por Tipo de Documento */}
+                      <div className="mt-4 pt-3 border-t border-emerald-500/10">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total de Entradas por Tipo de Documento</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {["NF-e", "NFC-e", "CT-e", "NFS-e"].map((t) => {
+                            const docsOfType = documents.filter(d => d.direction === "entrada" && d.type === t);
+                            const totalVal = docsOfType.reduce((s, d) => s + d.totalVal, 0);
+                            const count = docsOfType.length;
+                            return (
+                              <div key={t} className="p-2 bg-slate-900/60 border border-slate-800 rounded-lg">
+                                <p className="text-[9px] font-bold text-slate-400">{t}</p>
+                                <p className="text-xs font-bold text-emerald-400 font-mono mt-0.5">
+                                  R$ {totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </p>
+                                <p className="text-[8px] text-slate-500 mt-0.5 font-mono">{count} doc(s)</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="p-4 bg-indigo-950/10 border border-indigo-500/20 rounded-xl font-sans">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-indigo-400">Total de Saídas (Venda) por CFOP</span>
-                        <span className="text-[10px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded font-mono">DÉBITO</span>
+                    <div className="p-4 bg-indigo-950/10 border border-indigo-500/20 rounded-xl font-sans flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-indigo-400">Total de Saídas (Venda) por CFOP</span>
+                          <span className="text-[10px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded font-mono">DÉBITO</span>
+                        </div>
+                        <p className="text-xl font-mono font-bold text-indigo-300 mt-2">
+                          R$ {cfopGroups.filter(g => g.direction === "saida").reduce((sum, g) => sum + g.totalVal, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1">Soma de todas as vendas e prestações de serviço agrupadas por CFOP.</p>
                       </div>
-                      <p className="text-xl font-mono font-bold text-indigo-300 mt-2">
-                        R$ {cfopGroups.filter(g => g.direction === "saida").reduce((sum, g) => sum + g.totalVal, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-1">Soma de todas as vendas e prestações de serviço agrupadas por CFOP.</p>
+
+                      {/* Total de Saídas por Tipo de Documento */}
+                      <div className="mt-4 pt-3 border-t border-indigo-500/10">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total de Saídas por Tipo de Documento</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {["NF-e", "NFC-e", "CT-e", "NFS-e"].map((t) => {
+                            const docsOfType = documents.filter(d => d.direction === "saida" && d.type === t);
+                            const totalVal = docsOfType.reduce((s, d) => s + d.totalVal, 0);
+                            const count = docsOfType.length;
+                            return (
+                              <div key={t} className="p-2 bg-slate-900/60 border border-slate-800 rounded-lg">
+                                <p className="text-[9px] font-bold text-slate-400">{t}</p>
+                                <p className="text-xs font-bold text-indigo-400 font-mono mt-0.5">
+                                  R$ {totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                </p>
+                                <p className="text-[8px] text-slate-500 mt-0.5 font-mono">{count} doc(s)</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
