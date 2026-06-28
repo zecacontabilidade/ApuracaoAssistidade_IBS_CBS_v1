@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "Agent(general-purpose)"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)"
+    ]
+  },
+  "includeCoAuthoredBy": false
+}

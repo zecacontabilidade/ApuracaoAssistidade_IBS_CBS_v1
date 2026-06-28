@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Time de agentes, skills e prompt-mestre que os gera — local only, nao versionar (decisao do dono)
+.claude/agents/
+.claude/skills/
+ArquivosProjeto/PROMPT_CLAUDE_CODE_Time_de_Agentes.md
