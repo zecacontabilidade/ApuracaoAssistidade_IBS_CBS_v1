@@ -1,0 +1,121 @@
+services:
+  # ---------------------------------------------------------------------------
+  # app — container de desenvolvimento principal (FastAPI + tools)
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@db:5432/apuracao
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: xml-raw
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # worker — consumer Dramatiq (ADR 0005)
+  # PLACEHOLDER: o comando real do Dramatiq entra na Fase 1 (F1.x).
+  # Ex. futuro: python -m dramatiq backend.app.tasks --processes 2 --threads 1
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity   # substituir pelo comando Dramatiq na Fase 1
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@db:5432/apuracao
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: xml-raw
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # db — PostgreSQL 16
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: apuracao
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d apuracao"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # redis — Redis 7 (broker Dramatiq + cache)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ---------------------------------------------------------------------------
+  # minio — object storage S3-compatível (dev only)
+  # Substitui AWS S3 no ambiente local para armazenar XMLs brutos.
+  # ATENÇÃO — credenciais apenas para DEV LOCAL: minioadmin / minioadmin.
+  # Em produção, usar AWS S3 + IAM + Secrets Manager (Fase 4).
+  # API: porta 9000 | Console web: porta 9001 (acessíveis via forwardPorts do VS Code)
+  #
+  # Tag fixada (release datada estável) — não usar :latest em dev para garantir
+  # reprodutibilidade. Atualizar manualmente e re-testar healthcheck ao atualizar.
+  # Tag atual: RELEASE.2025-09-07T16-13-09Z
+  #
+  # Healthcheck usa 'mc ready' (mc está embutido na imagem minio/minio); 'curl'
+  # não está disponível na imagem baseada em Red Hat UBI micro.
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin   # DEV ONLY — não usar em prod
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    healthcheck:
+      # mc está embutido na imagem; curl NÃO está (imagem UBI micro).
+      # Credenciais hardcoded aqui são as mesmas do MINIO_ROOT_USER/PASSWORD
+      # definidas acima — DEV ONLY, nunca segredos reais.
+      test: ["CMD-SHELL", "mc alias set local http://localhost:9000 minioadmin minioadmin > /dev/null 2>&1 && mc ready local"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  pgdata:
+  miniodata:

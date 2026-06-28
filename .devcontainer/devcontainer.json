@@ -1,0 +1,29 @@
+{
+  "name": "simples-apuracao-rtc",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+  },
+  "forwardPorts": [8000, 5173, 5432, 6379, 9000, 9001],
+  "portsAttributes": {
+    "8000": { "label": "FastAPI backend" },
+    "5173": { "label": "Vite frontend" },
+    "5432": { "label": "PostgreSQL" },
+    "6379": { "label": "Redis" },
+    "9000": { "label": "MinIO API (S3)" },
+    "9001": { "label": "MinIO Console" }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-playwright.playwright"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
