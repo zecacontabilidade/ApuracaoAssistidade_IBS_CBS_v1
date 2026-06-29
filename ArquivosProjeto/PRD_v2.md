@@ -1,3 +1,10 @@
+> ⚠️ **LEGADO — não use como referência de implementação.**
+> Este documento descreve a arquitetura anterior do protótipo (Next.js / Supabase / cálculo no browser).
+> A stack vigente está em `CLAUDE.md` + `docs/adr/` + `docs/api/contrato-api-v1.md`.
+> Mantido apenas como referência histórica.
+
+---
+
 # PRD v2 — Apuração Assistida RTC
 ## Plataforma de Análise Fiscal Local — Reforma Tributária do Consumo
 > Versão: 2.0 | Data: 2026-06-01

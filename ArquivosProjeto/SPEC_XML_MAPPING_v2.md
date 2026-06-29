@@ -1,3 +1,10 @@
+> 📋 **REFERÊNCIA HISTÓRICA VÁLIDA — fonte para implementação de parsers.**
+> As regras de mapeamento XML aqui documentadas (CFOP, direction, crédito/débito, NF-e/NFC-e/CT-e/NFS-e) são fonte para F1.5 (parsers em Python).
+> A **implementação** segue a stack de `CLAUDE.md` + `docs/adr/` (lxml em Python, não fast-xml-parser em JavaScript).
+> Para a arquitetura técnica vigente, consulte `docs/adr/` e `docs/api/contrato-api-v1.md`.
+
+---
+
 # SPEC — Mapeamento XML → Modelo de Domínio (v2)
 ## Os 4 Tipos de Documento Fiscal — Revisado
 > Versão: 2.0 | Data: 2026-06-01

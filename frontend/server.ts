@@ -19,7 +19,7 @@ function getGeminiClient() {
       apiKey: apiKey || "MOCK_KEY_FOR_BUILD",
       httpOptions: {
         headers: {
-          "User-Agent": "aistudio-build",
+          "User-Agent": "simples-apuracao-rtc",
         },
       },
     });

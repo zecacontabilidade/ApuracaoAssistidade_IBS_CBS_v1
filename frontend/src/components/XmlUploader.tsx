@@ -10,15 +10,15 @@ interface XmlUploaderProps {
   myCnpj: string;
 }
 
-// 5 default realistic Brazilian XML simulation files
+// DEMO sintético — substituir por amostras via API na F1.9
 const COMPILADO_EXEMPLOS: FiscalDocument[] = [
   {
     id: "doc_1",
-    chave: "35260645189230000109550010001248591029384756",
-    emit_name: "Metalúrgica São Paulo S.A. (RPA)",
-    dest_name: "Simples Apuração Comercial Ltda (Minha Empresa)",
-    emit: "45.189.230/0001-09",
-    dest: "12.345.678/0001-90",
+    chave: "35260600000001000100550010001248591029384756",
+    emit_name: "Fornecedor Exemplo 1 Ltda (RPA)",
+    dest_name: "Minha Empresa",
+    emit: "00.000.001/0001-00",
+    dest: "",
     type: "NF-e",
     direction: "entrada",
     totalVal: 15400.00,
@@ -26,16 +26,16 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     valCbs: 1355.20, // 8.8% of 15400
     rateIbs: 17.7,
     rateCbs: 8.8,
-    description: "Insulmos e chapas de aço carbono para fabricação",
+    description: "Insumos e matéria-prima para fabricação",
     cfop: "1102"
   } as any,
   {
     id: "doc_2",
-    chave: "33260655189230000155660010005432101029384751",
-    emit_name: "Papelaria do Sol EIRELI (Simples)",
-    dest_name: "Simples Apuração Comercial Ltda (Minha Empresa)",
-    emit: "55.189.230/0001-55",
-    dest: "12.345.678/0001-90",
+    chave: "33260600000002000100660010005432101029384751",
+    emit_name: "Fornecedor Exemplo 2 EIRELI (Simples)",
+    dest_name: "Minha Empresa",
+    emit: "00.000.002/0001-00",
+    dest: "",
     type: "NF-e",
     direction: "entrada",
     totalVal: 2200.00,
@@ -48,11 +48,11 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
   } as any,
   {
     id: "doc_3",
-    chave: "35260612345678000190550010000123451029384752",
-    emit_name: "Simples Apuração Comercial Ltda (Minha Empresa)",
-    dest_name: "Supermercados Estrela S.A. (RPA Cliente)",
-    emit: "12.345.678/0001-90",
-    dest: "02.771.552/0001-22",
+    chave: "35260600000000000000550010000123451029384752",
+    emit_name: "Minha Empresa",
+    dest_name: "Cliente Exemplo S.A. (RPA)",
+    emit: "",
+    dest: "00.000.003/0001-00",
     type: "NF-e",
     direction: "saida",
     totalVal: 25000.00,
@@ -60,16 +60,16 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     valCbs: 2200.00, // 8.8%
     rateIbs: 17.7,
     rateCbs: 8.8,
-    description: "Venda de mercadorias manufaturadas B2B",
+    description: "Venda de mercadorias B2B",
     cfop: "5102"
   } as any,
   {
     id: "doc_4",
-    chave: "35260612345678000190550010000123461029384753",
-    emit_name: "Simples Apuração Comercial Ltda (Minha Empresa)",
-    dest_name: "Consumidor Final CPF",
-    emit: "12.345.678/0001-90",
-    dest: "333.444.555-66",
+    chave: "35260600000000000000550010000123461029384753",
+    emit_name: "Minha Empresa",
+    dest_name: "Consumidor Final",
+    emit: "",
+    dest: "",
     type: "NFC-e",
     direction: "saida",
     totalVal: 780.00,
@@ -82,11 +82,11 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
   } as any,
   {
     id: "doc_5",
-    chave: "35260635129034000199570010000045611029384754",
-    emit_name: "Rápido Transbrasil Transportes S.A.",
-    dest_name: "Simples Apuração Comercial Ltda (Minha Empresa)",
-    emit: "35.129.034/0001-99",
-    dest: "12.345.678/0001-90",
+    chave: "35260600000005000100570010000045611029384754",
+    emit_name: "Transportadora Exemplo S.A.",
+    dest_name: "Minha Empresa",
+    emit: "00.000.005/0001-00",
+    dest: "",
     type: "CT-e",
     direction: "entrada",
     totalVal: 3400.00,
@@ -94,7 +94,7 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     valCbs: 299.20, // 8.8%
     rateIbs: 17.7,
     rateCbs: 8.8,
-    description: "Frete interestadual sobre chapas de aço",
+    description: "Frete interestadual de insumos",
     cfop: "2352"
   } as any,
 ];
@@ -142,8 +142,8 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     let emitName = xmlDoc.getElementsByTagName("emit")[0]?.getElementsByTagName("xNome")[0]?.textContent || "Emitente Desconhecido";
     let destName = xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("xNome")[0]?.textContent || "Consumidor Final";
     let emitCnpj = xmlDoc.getElementsByTagName("emit")[0]?.getElementsByTagName("CNPJ")[0]?.textContent || "00.000.000/0001-00";
-    let destCnpj = xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CNPJ")[0]?.textContent || 
-                  xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CPF")[0]?.textContent || "333.333.333-33";
+    let destCnpj = xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CNPJ")[0]?.textContent ||
+                  xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CPF")[0]?.textContent || "";
     
     // Key/Chave
     let infProt = xmlDoc.getElementsByTagName("infProt")[0];
@@ -330,7 +330,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     }
 
     const val = Number(manualVal);
-    // Calculated mock IBS 17.7% / CBS 8.8%
+    // Calculated demo IBS 17.7% / CBS 8.8%
     const isEntrada = manualDirection === "entrada";
     const rateI = 17.7;
     const rateC = 8.8;
@@ -340,8 +340,8 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     const newDoc: FiscalDocument = {
       id: Math.random().toString(36).substring(7),
       chave: Array.from({ length: 44 }, () => Math.floor(Math.random() * 10)).join(""),
-      emitente: isEntrada ? (manualEmit || "Emitente Fornecedor S.A.") : "Simples Apuração Comercial Ltda (Minha Empresa)",
-      destinatario: isEntrada ? "Simples Apuração Comercial Ltda (Minha Empresa)" : (manualEmit || "Cliente Corporativo Ltda"),
+      emitente: isEntrada ? (manualEmit || "Emitente Fornecedor") : "Minha Empresa",
+      destinatario: isEntrada ? "Minha Empresa" : (manualEmit || "Cliente"),
       type: manualType,
       direction: manualDirection,
       totalVal: val,
@@ -394,7 +394,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/30 rounded-lg text-indigo-200 transition font-medium"
           >
             <Play className="w-3.5 h-3.5" />
-            Carregar Exemplo Realista
+            Carregar Dataset de Exemplo
           </button>
           {documents.length > 0 && (
             <button

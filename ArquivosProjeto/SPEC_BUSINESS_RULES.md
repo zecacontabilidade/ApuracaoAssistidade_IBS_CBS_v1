@@ -1,3 +1,10 @@
+> 📋 **REFERÊNCIA HISTÓRICA VÁLIDA — regras de negócio em vigor.**
+> As regras fiscais aqui documentadas (IBS/CBS, CFOP, LC 214/2025) são fonte para a implementação.
+> A **implementação** segue a stack de `CLAUDE.md` + `docs/adr/` (não mais Next.js/Supabase).
+> Para a arquitetura técnica vigente, consulte `docs/adr/` e `docs/api/contrato-api-v1.md`.
+
+---
+
 # SPEC — Regras de Negócio: Apuração IBS/CBS
 ## Ótica do Declarante — Reforma Tributária do Consumo
 > Versão: 1.0 | Data: 2026-06-01

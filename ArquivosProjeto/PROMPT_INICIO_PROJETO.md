@@ -1,3 +1,10 @@
+> ⚠️ **LEGADO — não use como referência de implementação.**
+> Este documento descreve a arquitetura anterior do protótipo (Next.js / Supabase / cálculo no browser).
+> A stack vigente está em `CLAUDE.md` + `docs/adr/` + `docs/api/contrato-api-v1.md`.
+> Mantido apenas como referência histórica.
+
+---
+
 # Prompt de Início de Projeto — Simples Apuração RTC
 ## Template para orientar qualquer IA a implementar este projeto do zero
 ---

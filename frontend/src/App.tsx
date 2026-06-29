@@ -27,8 +27,8 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 
 export default function App() {
-  const [cnpj, setCnpj] = useState("12.345.678/0001-90");
-  const [companyName, setCompanyName] = useState("Simples Apuração Comercial Ltda");
+  const [cnpj, setCnpj] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [regime, setRegime] = useState<TaxRegime>("Simples Nacional");
   
   // Tab control
@@ -42,12 +42,12 @@ export default function App() {
   const [supplierDocValue, setSupplierDocValue] = useState("");
 
   // Global manual/assumed indicators (when no precise XML is present)
-  const [totalSales, setTotalSales] = useState<number>(180000);
-  const [totalPurchases, setTotalPurchases] = useState<number>(85000);
-  
+  const [totalSales, setTotalSales] = useState<number>(0);
+  const [totalPurchases, setTotalPurchases] = useState<number>(0);
+
   // Custom Brazilian Reform simulations variables
-  const [purchasesFromSimplesRatio, setPurchasesFromSimplesRatio] = useState<number>(45); 
-  const [salesToCompaniesRatio, setSalesToCompaniesRatio] = useState<number>(80); 
+  const [purchasesFromSimplesRatio, setPurchasesFromSimplesRatio] = useState<number>(0);
+  const [salesToCompaniesRatio, setSalesToCompaniesRatio] = useState<number>(0);
   
   // Custom option under Reforma: Recolher IBS/CBS "por fora" do Simples
   const [payIbsCbsPorFora, setPayIbsCbsPorFora] = useState<boolean>(false);
@@ -490,6 +490,7 @@ export default function App() {
                             type="text"
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder="Ex: Empresa Exemplo Ltda"
                             className="w-full mt-1 px-3 py-1.5 bg-slate-900/60 text-xs text-slate-200 border border-slate-800 rounded-lg focus:outline-none focus:border-indigo-500 font-medium"
                           />
                         </div>
@@ -499,6 +500,7 @@ export default function App() {
                             type="text"
                             value={cnpj}
                             onChange={(e) => setCnpj(e.target.value)}
+                            placeholder="Ex: 00.000.000/0001-00"
                             className="w-full mt-1 px-3 py-1.5 bg-slate-900/60 text-xs text-slate-200 border border-slate-800 rounded-lg focus:outline-none focus:border-indigo-500 font-mono"
                           />
                         </div>
@@ -989,7 +991,7 @@ export default function App() {
                               <button
                                 onClick={() => {
                                   setSupplierName(doc.emitente);
-                                  setSupplierCnpj(doc.emitCnpj || "20.123.456/0001-00");
+                                  setSupplierCnpj(doc.emitCnpj || "");
                                   setSupplierDocKey(doc.chave);
                                   setSupplierDocValue(doc.totalVal.toFixed(2));
                                 }}
@@ -1469,7 +1471,7 @@ export default function App() {
       {/* Footer detailing legal context */}
       <footer className="border-t border-slate-800/80 bg-[#070b13] py-8 px-6 text-center text-slate-500 text-[11px] mt-16 font-mono space-y-1">
         <p>Simples Apuração RTC — Licenciado sob a Lei Complementar nº 214/2025 para finalidade exclusiva de simulação fiscal e adensamento cognitivo.</p>
-        <p className="mt-1">Google AI Studio Build &copy; {new Date().getFullYear()} — Ativo em contêineres segregados seguros de alto desempenho.</p>
+        <p className="mt-1">Simples Apuração RTC &copy; {new Date().getFullYear()} — Motor de apuração IBS/CBS por LC 214/2025.</p>
       </footer>
     </div>
   );
