@@ -8,6 +8,11 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspace:cached
+      # Persiste credenciais do Claude Code CLI entre rebuilds do devcontainer.
+      # O diretório ~/.claude guarda API key e tokens de sessão; sem este volume
+      # seria necessário refazer 'claude auth' após cada rebuild.
+      # Segurança: volume local DEV-ONLY — nunca expor em produção.
+      - claude-credentials:/home/vscode/.claude
     command: sleep infinity
     environment:
       DATABASE_URL: postgresql+psycopg://app:app@db:5432/apuracao
@@ -119,3 +124,5 @@ services:
 volumes:
   pgdata:
   miniodata:
+  # Credenciais do Claude Code CLI — persiste ~/.claude entre rebuilds (DEV ONLY).
+  claude-credentials:
