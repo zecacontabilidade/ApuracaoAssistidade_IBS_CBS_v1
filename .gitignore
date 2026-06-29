@@ -7,6 +7,18 @@ coverage/
 .env*
 !.env.example
 
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+*.egg-info/
+
 # Time de agentes, skills e prompt-mestre que os gera — local only, nao versionar (decisao do dono)
 .claude/agents/
 .claude/skills/

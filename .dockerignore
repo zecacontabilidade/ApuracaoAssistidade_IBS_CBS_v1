@@ -1,0 +1,38 @@
+# Dependências
+node_modules/
+frontend/node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+*.egg-info/
+.eggs/
+
+# Git / IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Testes / cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Env secrets (nunca copiar para a imagem)
+.env
+.env.*
+!.env.example
+
+# Dev artifacts
+*.log
+*.tmp
+ArquivosProjeto/

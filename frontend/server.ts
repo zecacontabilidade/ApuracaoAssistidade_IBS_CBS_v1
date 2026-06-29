@@ -1,3 +1,4 @@
+// LEGADO: será substituído pelo backend FastAPI (F1.0). Não expandir.
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
