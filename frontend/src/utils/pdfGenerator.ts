@@ -33,7 +33,7 @@ export function generateReportPDF(params: ExportPdfParams) {
     hasDocs,
     documents,
     cfopGroups,
-    aiAnalysis
+    aiAnalysis,
   } = params;
 
   // Create document
@@ -80,7 +80,7 @@ export function generateReportPDF(params: ExportPdfParams) {
     doc.text(
       "Documento gerado em conformidade com as diretrizes da Reforma Tributária (LC 214/2025).",
       margin,
-      pageHeight - 8
+      pageHeight - 8,
     );
     doc.text(`Página ${currentPage}`, pageWidth - margin - 15, pageHeight - 8);
   };
@@ -113,7 +113,11 @@ export function generateReportPDF(params: ExportPdfParams) {
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(129, 140, 248); // Indigo-300
-  doc.text("Harmonização Inteligente e Parecer Fiscal para Reforma Tributária 2026", margin + 6, y + 15);
+  doc.text(
+    "Harmonização Inteligente e Parecer Fiscal para Reforma Tributária 2026",
+    margin + 6,
+    y + 15,
+  );
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184); // Slate-400
   doc.text("Revisão Assistida por IA • Projeção IBS/CBS", margin + 6, y + 20);
@@ -160,7 +164,11 @@ export function generateReportPDF(params: ExportPdfParams) {
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(79, 70, 229); // Indigo
-  doc.text(regime + (payIbsCbsPorFora ? " (IBS/CBS recolhidos por fora)" : ""), margin + 25, y + 16);
+  doc.text(
+    regime + (payIbsCbsPorFora ? " (IBS/CBS recolhidos por fora)" : ""),
+    margin + 25,
+    y + 16,
+  );
 
   // Right Column
   doc.setFont("Helvetica", "bold");
@@ -179,7 +187,11 @@ export function generateReportPDF(params: ExportPdfParams) {
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(8);
   doc.setTextColor(hasDocs ? 16 : 100, hasDocs ? 185 : 116, hasDocs ? 129 : 139); // Emerald vs slate
-  doc.text(hasDocs ? "Documentos XML Unificados" : "Dados de Projeção Manual", margin + 140, y + 11);
+  doc.text(
+    hasDocs ? "Documentos XML Unificados" : "Dados de Projeção Manual",
+    margin + 140,
+    y + 11,
+  );
 
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(8);
@@ -218,7 +230,13 @@ export function generateReportPDF(params: ExportPdfParams) {
   y += 6.5;
 
   // Rows generator helper
-  const drawRow = (label: string, base: number, ibs: number, cbs: number, isTotal: boolean = false) => {
+  const drawRow = (
+    label: string,
+    base: number,
+    ibs: number,
+    cbs: number,
+    isTotal: boolean = false,
+  ) => {
     if (isTotal) {
       doc.setFillColor(241, 245, 249); // highlighted total row
       doc.rect(margin, y, contentWidth, 7.5, "F");
@@ -244,8 +262,18 @@ export function generateReportPDF(params: ExportPdfParams) {
     y += isTotal ? 7.5 : 7;
   };
 
-  drawRow("ENTRADAS (Créditos Estimados / Insumos)", currentCost, calculatedCreditsIbs, calculatedCreditsCbs);
-  drawRow("SAÍDAS (Débitos Estimados / Faturamento)", currentRevenue, calculatedDebitsIbs, calculatedDebitsCbs);
+  drawRow(
+    "ENTRADAS (Créditos Estimados / Insumos)",
+    currentCost,
+    calculatedCreditsIbs,
+    calculatedCreditsCbs,
+  );
+  drawRow(
+    "SAÍDAS (Débitos Estimados / Faturamento)",
+    currentRevenue,
+    calculatedDebitsIbs,
+    calculatedDebitsCbs,
+  );
 
   // Computations
   const netIbs = calculatedDebitsIbs - calculatedCreditsIbs;
@@ -257,7 +285,7 @@ export function generateReportPDF(params: ExportPdfParams) {
     currentRevenue - currentCost,
     netIbs,
     netCbs,
-    true
+    true,
   );
 
   y += 6;
@@ -280,28 +308,20 @@ export function generateReportPDF(params: ExportPdfParams) {
   doc.text(
     `R$ ${formatBRL(Math.abs(netTotal))} ${isCredito ? " (SALDO CREDOR)" : " (A RECOLHER)"}`,
     margin + 6,
-    y + 13
+    y + 13,
   );
 
   // Right message
   doc.setFont("Helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(
-    "O valor acima expressa o resultado fiscal líquido obtido pela",
-    margin + 110,
-    y + 6
-  );
-  doc.text(
-    "harmonia entre as entradas e saídas no simulador RTC.",
-    margin + 110,
-    y + 10
-  );
+  doc.text("O valor acima expressa o resultado fiscal líquido obtido pela", margin + 110, y + 6);
+  doc.text("harmonia entre as entradas e saídas no simulador RTC.", margin + 110, y + 10);
   doc.setFont("Helvetica", "bold");
   doc.text(
     `Alíquota Global de Impacto: ${(currentRevenue > 0 ? (netTotal / currentRevenue) * 100 : 0).toFixed(2)}%`,
     margin + 110,
-    y + 14
+    y + 14,
   );
 
   y += 24;
@@ -336,7 +356,7 @@ export function generateReportPDF(params: ExportPdfParams) {
 
   flows.forEach((flow) => {
     docTypes.forEach((t) => {
-      const docsFiltered = documents.filter(d => d.direction === flow && d.type === t);
+      const docsFiltered = documents.filter((d) => d.direction === flow && d.type === t);
       const totalVal = docsFiltered.reduce((sum, d) => sum + d.totalVal, 0);
       const count = docsFiltered.length;
 
@@ -352,8 +372,16 @@ export function generateReportPDF(params: ExportPdfParams) {
         doc.setTextColor(15, 23, 42);
         doc.text(t, margin + 4, y + 4);
 
-        doc.setTextColor(flow === "entrada" ? 16 : 79, flow === "entrada" ? 185 : 70, flow === "entrada" ? 129 : 229);
-        doc.text(flow === "entrada" ? "ENTRADA (Compra/Crédito)" : "SAÍDA (Venda/Débito)", margin + 40, y + 4);
+        doc.setTextColor(
+          flow === "entrada" ? 16 : 79,
+          flow === "entrada" ? 185 : 70,
+          flow === "entrada" ? 129 : 229,
+        );
+        doc.text(
+          flow === "entrada" ? "ENTRADA (Compra/Crédito)" : "SAÍDA (Venda/Débito)",
+          margin + 40,
+          y + 4,
+        );
 
         doc.setFont("Helvetica", "normal");
         doc.setTextColor(71, 85, 105);
@@ -413,7 +441,11 @@ export function generateReportPDF(params: ExportPdfParams) {
 
     // Fluxo stamp
     const isEntradaGroup = group.direction === "entrada";
-    doc.setTextColor(isEntradaGroup ? 16 : 79, isEntradaGroup ? 185 : 70, isEntradaGroup ? 129 : 229);
+    doc.setTextColor(
+      isEntradaGroup ? 16 : 79,
+      isEntradaGroup ? 185 : 70,
+      isEntradaGroup ? 129 : 229,
+    );
     doc.setFont("Helvetica", "bold");
     doc.text(isEntradaGroup ? "ENTRADA" : "SAÍDA", margin + 18, y + 4);
 

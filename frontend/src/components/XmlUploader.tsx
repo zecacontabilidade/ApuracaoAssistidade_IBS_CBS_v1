@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FiscalDocument, CFOP_LABELS } from "../types";
-import { Upload, FileText, CheckCircle2, ChevronRight, Play, AlertCircle, PlusCircle, Trash2 } from "lucide-react";
+import { FiscalDocument } from "../types";
+import { Upload, FileText, Play, AlertCircle, PlusCircle, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import JSZip from "jszip";
 
@@ -21,13 +21,13 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     dest: "",
     type: "NF-e",
     direction: "entrada",
-    totalVal: 15400.00,
-    valIbs: 2725.80, // 17.7% of 15400
-    valCbs: 1355.20, // 8.8% of 15400
+    totalVal: 15400.0,
+    valIbs: 2725.8, // 17.7% of 15400
+    valCbs: 1355.2, // 8.8% of 15400
     rateIbs: 17.7,
     rateCbs: 8.8,
     description: "Insumos e matéria-prima para fabricação",
-    cfop: "1102"
+    cfop: "1102",
   } as any,
   {
     id: "doc_2",
@@ -38,13 +38,13 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     dest: "",
     type: "NF-e",
     direction: "entrada",
-    totalVal: 2200.00,
-    valIbs: 132.00, // Reduced Simples credit - e.g. 6% unified (3.5% IBS, 2.5% CBS)
-    valCbs: 88.00,
+    totalVal: 2200.0,
+    valIbs: 132.0, // Reduced Simples credit - e.g. 6% unified (3.5% IBS, 2.5% CBS)
+    valCbs: 88.0,
     rateIbs: 6.0,
     rateCbs: 4.0,
     description: "Materiais de escritório diversos",
-    cfop: "1556"
+    cfop: "1556",
   } as any,
   {
     id: "doc_3",
@@ -55,13 +55,13 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     dest: "00.000.003/0001-00",
     type: "NF-e",
     direction: "saida",
-    totalVal: 25000.00,
-    valIbs: 4425.00, // 17.7%
-    valCbs: 2200.00, // 8.8%
+    totalVal: 25000.0,
+    valIbs: 4425.0, // 17.7%
+    valCbs: 2200.0, // 8.8%
     rateIbs: 17.7,
     rateCbs: 8.8,
     description: "Venda de mercadorias B2B",
-    cfop: "5102"
+    cfop: "5102",
   } as any,
   {
     id: "doc_4",
@@ -72,13 +72,13 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     dest: "",
     type: "NFC-e",
     direction: "saida",
-    totalVal: 780.00,
+    totalVal: 780.0,
     valIbs: 138.06, // 17.7%
-    valCbs: 68.64,  // 8.8%
+    valCbs: 68.64, // 8.8%
     rateIbs: 17.7,
     rateCbs: 8.8,
     description: "Venda direta varejo B2C",
-    cfop: "5102"
+    cfop: "5102",
   } as any,
   {
     id: "doc_5",
@@ -89,13 +89,13 @@ const COMPILADO_EXEMPLOS: FiscalDocument[] = [
     dest: "",
     type: "CT-e",
     direction: "entrada",
-    totalVal: 3400.00,
-    valIbs: 601.80, // 17.7%
-    valCbs: 299.20, // 8.8%
+    totalVal: 3400.0,
+    valIbs: 601.8, // 17.7%
+    valCbs: 299.2, // 8.8%
     rateIbs: 17.7,
     rateCbs: 8.8,
     description: "Frete interestadual de insumos",
-    cfop: "2352"
+    cfop: "2352",
   } as any,
 ];
 
@@ -139,21 +139,33 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     }
 
     // Extraction parsing
-    let emitName = xmlDoc.getElementsByTagName("emit")[0]?.getElementsByTagName("xNome")[0]?.textContent || "Emitente Desconhecido";
-    let destName = xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("xNome")[0]?.textContent || "Consumidor Final";
-    let emitCnpj = xmlDoc.getElementsByTagName("emit")[0]?.getElementsByTagName("CNPJ")[0]?.textContent || "00.000.000/0001-00";
-    let destCnpj = xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CNPJ")[0]?.textContent ||
-                  xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CPF")[0]?.textContent || "";
+    let emitName =
+      xmlDoc.getElementsByTagName("emit")[0]?.getElementsByTagName("xNome")[0]?.textContent ||
+      "Emitente Desconhecido";
+    let destName =
+      xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("xNome")[0]?.textContent ||
+      "Consumidor Final";
+    let emitCnpj =
+      xmlDoc.getElementsByTagName("emit")[0]?.getElementsByTagName("CNPJ")[0]?.textContent ||
+      "00.000.000/0001-00";
+    let destCnpj =
+      xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CNPJ")[0]?.textContent ||
+      xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CPF")[0]?.textContent ||
+      "";
 
     // Key/Chave
     let infProt = xmlDoc.getElementsByTagName("infProt")[0];
-    let key = infProt?.getElementsByTagName("chNFe")[0]?.textContent ||
-              xmlDoc.getElementsByTagName("infNFe")[0]?.getAttribute("Id")?.replace("NFe", "") ||
-              Math.random().toString().substring(2, 46);
+    let key =
+      infProt?.getElementsByTagName("chNFe")[0]?.textContent ||
+      xmlDoc.getElementsByTagName("infNFe")[0]?.getAttribute("Id")?.replace("NFe", "") ||
+      Math.random().toString().substring(2, 46);
 
     // Total value
-    let totalValNode = xmlDoc.getElementsByTagName("vNF")[0] || xmlDoc.getElementsByTagName("vProd")[0] || xmlDoc.getElementsByTagName("vServ")[0];
-    let totalVal = totalValNode ? Number(totalValNode.textContent || 0) : 1000.00;
+    let totalValNode =
+      xmlDoc.getElementsByTagName("vNF")[0] ||
+      xmlDoc.getElementsByTagName("vProd")[0] ||
+      xmlDoc.getElementsByTagName("vServ")[0];
+    let totalVal = totalValNode ? Number(totalValNode.textContent || 0) : 1000.0;
 
     // CFOP Extraction (done early to reliably determine direction)
     let cfopNode = xmlDoc.getElementsByTagName("CFOP")[0] || xmlDoc.getElementsByTagName("cfop")[0];
@@ -213,7 +225,8 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     let docType: "NF-e" | "NFC-e" | "CT-e" | "NFS-e" = "NF-e";
     if (filename.toLowerCase().includes("ct")) docType = "CT-e";
     if (filename.toLowerCase().includes("nfc")) docType = "NFC-e";
-    if (filename.toLowerCase().includes("nfs") || filename.toLowerCase().includes("servico")) docType = "NFS-e";
+    if (filename.toLowerCase().includes("nfs") || filename.toLowerCase().includes("servico"))
+      docType = "NFS-e";
 
     return {
       id: Math.random().toString(36).substring(7),
@@ -230,7 +243,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
       description: `Documento importado via parser XML (${filename})`,
       cfop,
       emitCnpj,
-      destCnpj
+      destCnpj,
     };
   };
 
@@ -269,7 +282,10 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const isZip = file.name.endsWith(".zip") || file.type === "application/zip" || file.type === "application/x-zip-compressed";
+      const isZip =
+        file.name.endsWith(".zip") ||
+        file.type === "application/zip" ||
+        file.type === "application/x-zip-compressed";
 
       if (isZip) {
         try {
@@ -291,7 +307,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
           }
 
           if (xmlCountInZip === 0) {
-            errors.push(`O pacote ZIP "${file.name}" não continha nenhum arquivo *.xml correspondente.`);
+            errors.push(
+              `O pacote ZIP "${file.name}" não continha nenhum arquivo *.xml correspondente.`,
+            );
           }
         } catch (err: any) {
           errors.push(`Erro de processamento no ZIP "${file.name}": ${err.message}`);
@@ -340,8 +358,8 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     const newDoc: FiscalDocument = {
       id: Math.random().toString(36).substring(7),
       chave: Array.from({ length: 44 }, () => Math.floor(Math.random() * 10)).join(""),
-      emitente: isEntrada ? (manualEmit || "Emitente Fornecedor") : "Minha Empresa",
-      destinatario: isEntrada ? "Minha Empresa" : (manualEmit || "Cliente"),
+      emitente: isEntrada ? manualEmit || "Emitente Fornecedor" : "Minha Empresa",
+      destinatario: isEntrada ? "Minha Empresa" : manualEmit || "Cliente",
       type: manualType,
       direction: manualDirection,
       totalVal: val,
@@ -350,7 +368,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
       rateIbs: rateI,
       rateCbs: rateC,
       description: manualDesc || "Lançamento tributário manual",
-      cfop: manualCfop || (isEntrada ? "1102" : "5102")
+      cfop: manualCfop || (isEntrada ? "1102" : "5102"),
     };
 
     onDocumentsChange([...documents, newDoc]);
@@ -361,7 +379,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
   };
 
   const removeDoc = (id: string) => {
-    onDocumentsChange(documents.filter(d => d.id !== id));
+    onDocumentsChange(documents.filter((d) => d.id !== id));
   };
 
   const clearAll = () => {
@@ -385,7 +403,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
             1. Repositório e Parser de Documentos Fiscais
           </h2>
           <p className="text-sm text-slate-400">
-            Adicione notas fiscais reais em XML (NF-e, NFC-e, CT-e), simule registros de transição para o novo regime CBS/IBS ou faça o upload de um lote compactado em arquivo ZIP contendo diversos XMLs de apuração.
+            Adicione notas fiscais reais em XML (NF-e, NFC-e, CT-e), simule registros de transição
+            para o novo regime CBS/IBS ou faça o upload de um lote compactado em arquivo ZIP
+            contendo diversos XMLs de apuração.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -434,7 +454,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
               <Upload className="w-6 h-6" />
             </div>
             <p className="text-sm font-medium text-slate-200">Arraste XMLs ou arquivos ZIP aqui</p>
-            <p className="text-xs text-slate-500 mt-1">Aceita arquivos *.xml individuais ou empacotados em *.zip</p>
+            <p className="text-xs text-slate-500 mt-1">
+              Aceita arquivos *.xml individuais ou empacotados em *.zip
+            </p>
           </div>
 
           {uploadError && (
@@ -445,8 +467,13 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
           )}
 
           {/* Manual Entry Form */}
-          <form onSubmit={addManualDocument} className="bg-slate-900/60 p-4 border border-slate-800 rounded-xl space-y-3">
-            <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Lançamento Rápido</h3>
+          <form
+            onSubmit={addManualDocument}
+            className="bg-slate-900/60 p-4 border border-slate-800 rounded-xl space-y-3"
+          >
+            <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
+              Lançamento Rápido
+            </h3>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -478,7 +505,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-slate-400 font-medium font-mono">CÓDIGO CFOP</label>
+                <label className="text-[10px] text-slate-400 font-medium font-mono">
+                  CÓDIGO CFOP
+                </label>
                 <input
                   type="text"
                   maxLength={4}
@@ -543,19 +572,26 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
           {/* Quick Metrics display */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-slate-900/40 p-3 border border-slate-800/80 rounded-xl">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">Documentos</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                Documentos
+              </span>
               <p className="text-xl font-mono font-bold text-slate-200">{documents.length}</p>
             </div>
             <div className="bg-slate-900/40 p-3 border border-slate-800/80 rounded-xl">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">Valor Total</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                Valor Total
+              </span>
               <p className="text-sm font-mono font-bold text-slate-200 mt-1">
                 R$ {totalXmlVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div className="bg-slate-900/40 p-3 border border-slate-800/80 rounded-xl">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">IBS + CBS Extrapolado</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                IBS + CBS Extrapolado
+              </span>
               <p className="text-sm font-mono font-bold font-sans text-emerald-400 mt-1">
-                R$ {(totalIbsVal + totalCbsVal).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                R${" "}
+                {(totalIbsVal + totalCbsVal).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
             </div>
           </div>
@@ -567,7 +603,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
                 <button
                   onClick={() => setFilter("todos")}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition ${
-                    filter === "todos" ? "bg-slate-800 text-slate-100" : "text-slate-400 hover:text-slate-200"
+                    filter === "todos"
+                      ? "bg-slate-800 text-slate-100"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   Todos
@@ -575,7 +613,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
                 <button
                   onClick={() => setFilter("entrada")}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition ${
-                    filter === "entrada" ? "bg-emerald-950/40 text-emerald-300 border border-emerald-500/20" : "text-slate-400 hover:text-slate-200"
+                    filter === "entrada"
+                      ? "bg-emerald-950/40 text-emerald-300 border border-emerald-500/20"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   Entradas (Créditos)
@@ -583,7 +623,9 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
                 <button
                   onClick={() => setFilter("saida")}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition ${
-                    filter === "saida" ? "bg-blue-950/40 text-blue-300 border border-blue-500/20" : "text-slate-400 hover:text-slate-200"
+                    filter === "saida"
+                      ? "bg-blue-950/40 text-blue-300 border border-blue-500/20"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   Saídas (Débitos)
@@ -602,7 +644,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
                     Nenhum documento cadastrado. Importe arquivos XML ou adicione manualmente acima.
                   </div>
                 ) : (
-                  filteredDocs.map((doc, idx) => (
+                  filteredDocs.map((doc, _idx) => (
                     <motion.div
                       key={doc.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -630,7 +672,8 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
                           </span>
                         </div>
                         <span className="text-[10px] text-slate-500 block truncate mt-0.5 font-mono">
-                          Chave: {doc.chave.substring(0, 10)}...{doc.chave.substring(doc.chave.length - 8)} | {doc.type}
+                          Chave: {doc.chave.substring(0, 10)}...
+                          {doc.chave.substring(doc.chave.length - 8)} | {doc.type}
                         </span>
                       </div>
 
@@ -650,7 +693,8 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
                           R$ {doc.totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </div>
                         <div className="text-[9px] text-slate-500 mt-0.5">
-                          IBS: R$ {doc.valIbs.toFixed(2)} ({doc.rateIbs}%) | CBS: R$ {doc.valCbs.toFixed(2)} ({doc.rateCbs}%)
+                          IBS: R$ {doc.valIbs.toFixed(2)} ({doc.rateIbs}%) | CBS: R${" "}
+                          {doc.valCbs.toFixed(2)} ({doc.rateCbs}%)
                         </div>
                       </div>
 

@@ -16,13 +16,9 @@ import {
   CheckCircle,
   FileText,
   BadgeAlert,
-  PieChart,
-  Grid,
-  FileCheck,
   ShieldCheck,
-  ArrowRight,
   Sparkles,
-  Printer
+  Printer,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -32,7 +28,9 @@ export default function App() {
   const [regime, setRegime] = useState<TaxRegime>("Simples Nacional");
 
   // Tab control
-  const [activeTab, setActiveTab] = useState<"visao" | "simulador" | "xml" | "conformidade" | "ai" | "tutorial">("visao");
+  const [activeTab, setActiveTab] = useState<
+    "visao" | "simulador" | "xml" | "conformidade" | "ai" | "tutorial"
+  >("visao");
 
   // States for Supplier non-compliance letter
   const [supplierName, setSupplierName] = useState("");
@@ -77,7 +75,7 @@ export default function App() {
   let calculatedCreditsCbs = 0;
 
   if (hasDocs) {
-    documents.forEach(doc => {
+    documents.forEach((doc) => {
       if (doc.direction === "saida") {
         calculatedDebitsIbs += doc.valIbs;
         calculatedDebitsCbs += doc.valCbs;
@@ -91,8 +89,12 @@ export default function App() {
     const purchasesRpa = totalPurchases * (1 - purchasesFromSimplesRatio / 100);
     const purchasesSimples = totalPurchases * (purchasesFromSimplesRatio / 100);
 
-    calculatedCreditsIbs = (purchasesRpa * (ALIQUOTA_PADRAO_IBS / 100)) + (purchasesSimples * (SIMPLES_CREDIT_RATE_IBS / 100));
-    calculatedCreditsCbs = (purchasesRpa * (ALIQUOTA_PADRAO_CBS / 100)) + (purchasesSimples * (SIMPLES_CREDIT_RATE_CBS / 100));
+    calculatedCreditsIbs =
+      purchasesRpa * (ALIQUOTA_PADRAO_IBS / 100) +
+      purchasesSimples * (SIMPLES_CREDIT_RATE_IBS / 100);
+    calculatedCreditsCbs =
+      purchasesRpa * (ALIQUOTA_PADRAO_CBS / 100) +
+      purchasesSimples * (SIMPLES_CREDIT_RATE_CBS / 100);
 
     // Debits derivation
     if (regime === "RPA" || payIbsCbsPorFora) {
@@ -111,15 +113,19 @@ export default function App() {
   const netCbs = Math.max(0, calculatedDebitsCbs - calculatedCreditsCbs);
   const totalNetTax = netIbs + netCbs;
 
-  const currentRevenue = hasDocs ? documents.filter(d => d.direction === "saida").reduce((s, d) => s + d.totalVal, 0) : totalSales;
-  const currentCost = hasDocs ? documents.filter(d => d.direction === "entrada").reduce((s, d) => s + d.totalVal, 0) : totalPurchases;
+  const currentRevenue = hasDocs
+    ? documents.filter((d) => d.direction === "saida").reduce((s, d) => s + d.totalVal, 0)
+    : totalSales;
+  const currentCost = hasDocs
+    ? documents.filter((d) => d.direction === "entrada").reduce((s, d) => s + d.totalVal, 0)
+    : totalPurchases;
 
   // B2B client loss calculation if Simples Nacional does not destacan IBS/CBS
   const b2bSalesVolume = currentRevenue * (salesToCompaniesRatio / 100);
   const lostCreditsForClients = payIbsCbsPorFora ? 0 : b2bSalesVolume * (ALIQUOTA_DUAL_CHEIA / 100);
 
   // Filter non-compliant items starting year 2026/LC 214 rules
-  const nonCompliantDocs = documents.filter(doc => {
+  const nonCompliantDocs = documents.filter((doc) => {
     // If RPA, and total val is positive, and no IBS/CBS is highlighted in outbound/inbound
     const hasAnyIbsCbs = doc.valIbs > 0 || doc.valCbs > 0;
     return !hasAnyIbsCbs && doc.totalVal > 0;
@@ -146,12 +152,16 @@ export default function App() {
         if (!groups[key]) {
           groups[key] = {
             cfop: code,
-            label: CFOP_LABELS[code] || (doc.direction === "entrada" ? "Outras Entradas de Material" : "Outras Prestações de Saída"),
+            label:
+              CFOP_LABELS[code] ||
+              (doc.direction === "entrada"
+                ? "Outras Entradas de Material"
+                : "Outras Prestações de Saída"),
             direction: doc.direction,
             totalVal: 0,
             valIbs: 0,
             valCbs: 0,
-            count: 0
+            count: 0,
           };
         }
         groups[key].totalVal += doc.totalVal;
@@ -168,7 +178,7 @@ export default function App() {
         totalVal: totalSales,
         valIbs: calculatedDebitsIbs,
         valCbs: calculatedDebitsCbs,
-        count: 1
+        count: 1,
       };
 
       groups["1102-entrada"] = {
@@ -178,7 +188,7 @@ export default function App() {
         totalVal: totalPurchases,
         valIbs: calculatedCreditsIbs,
         valCbs: calculatedCreditsCbs,
-        count: 1
+        count: 1,
       };
     }
 
@@ -193,40 +203,43 @@ export default function App() {
   // Handle CVS/data report export
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "ID,Chave,Origem,Destino,Tipo,CFOP,Fluxo,Valor Total (R$),IBS (R$),CBS (R$),Descricao\n";
+    csvContent +=
+      "ID,Chave,Origem,Destino,Tipo,CFOP,Fluxo,Valor Total (R$),IBS (R$),CBS (R$),Descricao\n";
 
-    const rows = hasDocs ? documents : [
-      {
-        id: "Sim_1",
-        chave: "SimuladoGeralFaturamento",
-        emitente: companyName,
-        destinatario: "Clientes Gerais",
-        type: "NF-e",
-        direction: "saida",
-        totalVal: currentRevenue,
-        valIbs: calculatedDebitsIbs,
-        valCbs: calculatedDebitsCbs,
-        description: "Faturamento simulado de saídas",
-        cfop: "5102"
-      } as any,
-      {
-        id: "Sim_2",
-        chave: "SimuladoGeralCompras",
-        emitente: "Fornecedores Gerais",
-        destinatario: companyName,
-        type: "NF-e",
-        direction: "entrada",
-        totalVal: currentCost,
-        valIbs: calculatedCreditsIbs,
-        valCbs: calculatedCreditsCbs,
-        description: "Insumos operacionais simulados",
-        cfop: "1102"
-      } as any
-    ];
+    const rows = hasDocs
+      ? documents
+      : [
+          {
+            id: "Sim_1",
+            chave: "SimuladoGeralFaturamento",
+            emitente: companyName,
+            destinatario: "Clientes Gerais",
+            type: "NF-e",
+            direction: "saida",
+            totalVal: currentRevenue,
+            valIbs: calculatedDebitsIbs,
+            valCbs: calculatedDebitsCbs,
+            description: "Faturamento simulado de saídas",
+            cfop: "5102",
+          } as any,
+          {
+            id: "Sim_2",
+            chave: "SimuladoGeralCompras",
+            emitente: "Fornecedores Gerais",
+            destinatario: companyName,
+            type: "NF-e",
+            direction: "entrada",
+            totalVal: currentCost,
+            valIbs: calculatedCreditsIbs,
+            valCbs: calculatedCreditsCbs,
+            description: "Insumos operacionais simulados",
+            cfop: "1102",
+          } as any,
+        ];
 
-    rows.forEach(r => {
+    rows.forEach((r) => {
       const code = r.cfop || (r.direction === "entrada" ? "1102" : "5102");
-      csvContent += `"${r.id}","${r.chave}","${r.emitente || r.emit_name || ''}","${r.destinatario || r.dest_name || ''}","${r.type}","${code}","${r.direction}",${r.totalVal},${r.valIbs},${r.valCbs},"${r.description || ''}"\n`;
+      csvContent += `"${r.id}","${r.chave}","${r.emitente || r.emit_name || ""}","${r.destinatario || r.dest_name || ""}","${r.type}","${code}","${r.direction}",${r.totalVal},${r.valIbs},${r.valCbs},"${r.description || ""}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -257,7 +270,7 @@ export default function App() {
       hasDocs,
       documents,
       cfopGroups,
-      aiAnalysis
+      aiAnalysis,
     });
   };
 
@@ -272,13 +285,13 @@ export default function App() {
       totalSales: currentRevenue,
       purchasesFromSimplesCount: Math.round((purchasesFromSimplesRatio / 100) * 10),
       salesToCompaniesCount: Math.round((salesToCompaniesRatio / 100) * 10),
-      documents: documents.map(d => ({
+      documents: documents.map((d) => ({
         type: d.type,
         direction: d.direction,
         valIbs: d.valIbs,
         valCbs: d.valCbs,
-        totalVal: d.totalVal
-      }))
+        totalVal: d.totalVal,
+      })),
     };
 
     try {
@@ -297,7 +310,9 @@ export default function App() {
         setErrorMessage(data.error || "Erro de servidor ao compilar diagnóstico Gemini.");
       }
     } catch (err: any) {
-      setErrorMessage("Erro ao conectar com a Inteligência Fiscal. Teste se o servidor está ativo.");
+      setErrorMessage(
+        "Erro ao conectar com a Inteligência Fiscal. Teste se o servidor está ativo.",
+      );
     } finally {
       setLoadingAi(false);
     }
@@ -308,13 +323,31 @@ export default function App() {
     return text.split("\n").map((line, idx) => {
       const trimmed = line.trim();
       if (trimmed.startsWith("###")) {
-        return <h4 key={idx} className="text-sm font-bold text-slate-100 mt-4 mb-1.5 font-sans flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-indigo-400 shrink-0" /> {trimmed.replace("###", "")}</h4>;
+        return (
+          <h4
+            key={idx}
+            className="text-sm font-bold text-slate-100 mt-4 mb-1.5 font-sans flex items-center gap-1.5"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" /> {trimmed.replace("###", "")}
+          </h4>
+        );
       }
       if (trimmed.startsWith("##")) {
-        return <h3 key={idx} className="text-base font-bold text-teal-300 mt-5 border-b border-slate-800 pb-1.5 mb-3 font-sans">{trimmed.replace("##", "")}</h3>;
+        return (
+          <h3
+            key={idx}
+            className="text-base font-bold text-teal-300 mt-5 border-b border-slate-800 pb-1.5 mb-3 font-sans"
+          >
+            {trimmed.replace("##", "")}
+          </h3>
+        );
       }
       if (trimmed.startsWith("#")) {
-        return <h2 key={idx} className="text-lg font-extrabold text-white mt-5 mb-4 font-sans">{trimmed.replace("#", "")}</h2>;
+        return (
+          <h2 key={idx} className="text-lg font-extrabold text-white mt-5 mb-4 font-sans">
+            {trimmed.replace("#", "")}
+          </h2>
+        );
       }
       if (trimmed.startsWith("*") || trimmed.startsWith("-")) {
         const itemText = trimmed.substring(1).trim();
@@ -324,17 +357,35 @@ export default function App() {
           </li>
         );
       }
-      return <p key={idx} className="text-slate-300 text-xs leading-relaxed my-2">{formatBoldText(trimmed)}</p>;
+      return (
+        <p key={idx} className="text-slate-300 text-xs leading-relaxed my-2">
+          {formatBoldText(trimmed)}
+        </p>
+      );
     });
   };
 
   const formatBoldText = (text: string) => {
     const parts = text.split(/\*\*(.*?)\*\*/g);
-    return parts.map((part, i) => (i % 2 === 1 ? <strong key={i} className="text-white font-medium bg-indigo-950/40 px-1 py-0.5 rounded text-[11px]">{part}</strong> : part));
+    return parts.map((part, i) =>
+      i % 2 === 1 ? (
+        <strong
+          key={i}
+          className="text-white font-medium bg-indigo-950/40 px-1 py-0.5 rounded text-[11px]"
+        >
+          {part}
+        </strong>
+      ) : (
+        part
+      ),
+    );
   };
 
   return (
-    <div id="main-app-container" className="bg-[#0b0f19] text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
+    <div
+      id="main-app-container"
+      className="bg-[#0b0f19] text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white"
+    >
       {/* Dynamic top badge representing production deployment readiness */}
       <div className="bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-950 px-4 py-1.5 text-center text-[11px] font-mono tracking-wider text-indigo-200 border-b border-indigo-900/60 flex items-center justify-center gap-2">
         <ShieldCheck className="w-4 h-4 text-indigo-400" />
@@ -350,12 +401,16 @@ export default function App() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-extrabold tracking-tight text-white font-sans">Simples Apuração RTC</h1>
+                <h1 className="text-lg font-extrabold tracking-tight text-white font-sans">
+                  Simples Apuração RTC
+                </h1>
                 <span className="bg-emerald-950 text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">
                   SaaS Beta v3.0
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Harmonização Inteligente de Créditos e Débitos na Transição IBS/CBS</p>
+              <p className="text-xs text-slate-400">
+                Harmonização Inteligente de Créditos e Débitos na Transição IBS/CBS
+              </p>
             </div>
           </div>
 
@@ -388,37 +443,50 @@ export default function App() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto p-6 space-y-8">
-
         {/* Dynamic MicroSaaS Global metrics ribbon */}
         <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-[#101526] border border-slate-800/60 p-4 rounded-xl">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Empresa Analisada</p>
-            <p className="text-xs font-bold text-slate-200 mt-1 truncate">{companyName || "Simulado"}</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              Empresa Analisada
+            </p>
+            <p className="text-xs font-bold text-slate-200 mt-1 truncate">
+              {companyName || "Simulado"}
+            </p>
             <p className="text-[10px] text-slate-500 mt-0.5 font-mono">{cnpj}</p>
           </div>
           <div className="bg-[#101526] border border-slate-800/60 p-4 rounded-xl">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Enquadramento</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              Enquadramento
+            </p>
             <span className="inline-block mt-1 bg-indigo-950 text-indigo-400 border border-indigo-500/20 text-[10px] font-extrabold px-2 py-0.5 rounded">
               {regime} {payIbsCbsPorFora && "+ Highlight"}
             </span>
             <p className="text-[10px] text-slate-500 mt-0.5">Regime pretendido para 2026</p>
           </div>
           <div className="bg-[#101526] border border-slate-800/60 p-4 rounded-xl">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Faturamento Saídas</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              Faturamento Saídas
+            </p>
             <p className="text-xs font-mono font-bold text-slate-100 mt-1">
               R$ {currentRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
-            <span className="text-[9px] text-slate-500">{hasDocs ? "Dos XMLs importados" : "Configurado no painel"}</span>
+            <span className="text-[9px] text-slate-500">
+              {hasDocs ? "Dos XMLs importados" : "Configurado no painel"}
+            </span>
           </div>
           <div className="bg-[#101526] border border-slate-800/60 p-4 rounded-xl font-mono">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Crédito Acumulado</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              Crédito Acumulado
+            </p>
             <p className="text-xs font-bold text-emerald-400 mt-1">
               R$ {totalCredits.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
             <span className="text-[9px] text-emerald-600/90 font-sans">Aproveitamento efetivo</span>
           </div>
           <div className="bg-[#101526] border border-slate-800/60 p-4 rounded-xl font-mono">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">IBS + CBS Líquido</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              IBS + CBS Líquido
+            </p>
             <p className="text-xs font-bold text-red-400 mt-1">
               R$ {totalNetTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
@@ -436,7 +504,7 @@ export default function App() {
               { id: "conformidade", label: "Filtro de Inconformidades", icon: AlertTriangle },
               { id: "ai", label: "Dossiê Inteligente AI", icon: Cpu },
               { id: "tutorial", label: "Tutorial de Uso", icon: HelpCircle },
-            ].map(tab => {
+            ].map((tab) => {
               const Icon = tab.icon;
               const isSelected = activeTab === tab.id;
               return (
@@ -456,14 +524,14 @@ export default function App() {
             })}
           </div>
           <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="font-semibold text-slate-400">{documents.length}</span> documentos carregados
+            <span className="font-semibold text-slate-400">{documents.length}</span> documentos
+            carregados
           </div>
         </div>
 
         {/* Tab Contents with AnimatePresence */}
         <div className="min-h-[400px]">
           <AnimatePresence mode="wait">
-
             {/* Traw 1: Visão Geral */}
             {activeTab === "visao" && (
               <motion.div
@@ -480,12 +548,16 @@ export default function App() {
                     <div className="bg-[#10162a]/90 border border-slate-800/80 p-5 rounded-2xl space-y-4">
                       <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
                         <Settings className="w-4.5 h-4.5 text-indigo-400" />
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Diagnóstico Cadastral</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                          Diagnóstico Cadastral
+                        </h3>
                       </div>
 
                       <div className="space-y-3">
                         <div>
-                          <label className="text-[10px] text-slate-400 font-medium font-mono">RAZÃO SOCIAL</label>
+                          <label className="text-[10px] text-slate-400 font-medium font-mono">
+                            RAZÃO SOCIAL
+                          </label>
                           <input
                             type="text"
                             value={companyName}
@@ -495,7 +567,9 @@ export default function App() {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-slate-400 font-medium font-mono">CNPJ DA OPERAÇÃO</label>
+                          <label className="text-[10px] text-slate-400 font-medium font-mono">
+                            CNPJ DA OPERAÇÃO
+                          </label>
                           <input
                             type="text"
                             value={cnpj}
@@ -505,7 +579,9 @@ export default function App() {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-slate-400 font-medium font-mono">REGIME DE ENQUADRAMENTO</label>
+                          <label className="text-[10px] text-slate-400 font-medium font-mono">
+                            REGIME DE ENQUADRAMENTO
+                          </label>
                           <div className="grid grid-cols-3 gap-1 mt-1">
                             {(["RPA", "Simples Nacional", "MEI"] as TaxRegime[]).map((r) => (
                               <button
@@ -536,8 +612,13 @@ export default function App() {
                                 className="mt-0.5 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-0"
                               />
                               <div className="space-y-0.5">
-                                <span className="font-semibold text-indigo-300">Recolher IBS/CBS "por fora"</span>
-                                <p className="text-[10px] text-slate-400">Garante creditamento integral de 26,5% aos adquirentes do mercado corporativo (B2B).</p>
+                                <span className="font-semibold text-indigo-300">
+                                  Recolher IBS/CBS "por fora"
+                                </span>
+                                <p className="text-[10px] text-slate-400">
+                                  Garante creditamento integral de 26,5% aos adquirentes do mercado
+                                  corporativo (B2B).
+                                </p>
                               </div>
                             </label>
                           </div>
@@ -547,21 +628,29 @@ export default function App() {
 
                     <div className="bg-[#10162a]/90 border border-slate-800/80 p-5 rounded-2xl">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-                        <span className="text-xs uppercase font-bold text-slate-400">Origem de Créditos</span>
-                        <span className="bg-slate-800 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded text-indigo-400">Mapeamento</span>
+                        <span className="text-xs uppercase font-bold text-slate-400">
+                          Origem de Créditos
+                        </span>
+                        <span className="bg-slate-800 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded text-indigo-400">
+                          Mapeamento
+                        </span>
                       </div>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between items-center py-1">
                           <span className="text-slate-400 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" /> RPA (Lucro Presumido/Real)
+                            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" /> RPA (Lucro
+                            Presumido/Real)
                           </span>
                           <span className="font-mono text-slate-200">Aproveita 100% (26,5%)</span>
                         </div>
                         <div className="flex justify-between items-center py-1">
                           <span className="text-slate-400 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" /> Simples Nacional Fornecedor
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" /> Simples
+                            Nacional Fornecedor
                           </span>
-                          <span className="font-mono text-amber-500">Parcial unificado (~6.0%)</span>
+                          <span className="font-mono text-amber-500">
+                            Parcial unificado (~6.0%)
+                          </span>
                         </div>
                         <div className="flex justify-between items-center py-1">
                           <span className="text-slate-400 flex items-center gap-1.5">
@@ -581,39 +670,71 @@ export default function App() {
                           <Activity className="w-4.5 h-4.5 text-indigo-400 animate-pulse" />
                           Resultado de Apuração Dual (IBS/CBS)
                         </h3>
-                        <span className="text-[10px] text-slate-400 font-mono">Consolidado em {cnpj}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          Consolidado em {cnpj}
+                        </span>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl">
-                          <span className="text-[10px] uppercase font-bold text-slate-400">Débito Estimado</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-400">
+                            Débito Estimado
+                          </span>
                           <p className="text-lg font-mono font-bold text-slate-200 mt-1">
                             R$ {totalDebits.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                           </p>
                           <div className="mt-1 text-[9px] text-slate-500 space-y-0.5 font-mono">
-                            <p>IBS Saída: R$ {calculatedDebitsIbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-                            <p>CBS Saída: R$ {calculatedDebitsCbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                            <p>
+                              IBS Saída: R${" "}
+                              {calculatedDebitsIbs.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </p>
+                            <p>
+                              CBS Saída: R${" "}
+                              {calculatedDebitsCbs.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </p>
                           </div>
                         </div>
 
                         <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl">
-                          <span className="text-[10px] uppercase font-bold text-slate-400">Crédito Admitido</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-400">
+                            Crédito Admitido
+                          </span>
                           <p className="text-lg font-mono font-bold text-emerald-400 mt-1">
                             R$ {totalCredits.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                           </p>
                           <div className="mt-1 text-[9px] text-emerald-600 space-y-0.5 font-mono">
-                            <p>IBS Crédito: R$ {calculatedCreditsIbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-                            <p>CBS Crédito: R$ {calculatedCreditsCbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                            <p>
+                              IBS Crédito: R${" "}
+                              {calculatedCreditsIbs.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </p>
+                            <p>
+                              CBS Crédito: R${" "}
+                              {calculatedCreditsCbs.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </p>
                           </div>
                         </div>
 
                         <div className="p-4 bg-indigo-950/10 border border-indigo-500/20 rounded-xl">
-                          <span className="text-[10px] uppercase font-bold text-indigo-400">Imposto Líquido Devido</span>
+                          <span className="text-[10px] uppercase font-bold text-indigo-400">
+                            Imposto Líquido Devido
+                          </span>
                           <p className="text-lg font-mono font-bold text-indigo-300 mt-1">
                             R$ {totalNetTax.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                           </p>
                           <p className="text-[9px] text-slate-500 mt-1">
-                            Carga operacional de {currentRevenue > 0 ? ((totalNetTax / currentRevenue) * 100).toFixed(2) : "0.00"}% do faturamento.
+                            Carga operacional de{" "}
+                            {currentRevenue > 0
+                              ? ((totalNetTax / currentRevenue) * 100).toFixed(2)
+                              : "0.00"}
+                            % do faturamento.
                           </p>
                         </div>
                       </div>
@@ -622,21 +743,37 @@ export default function App() {
                       <div className="p-4 bg-slate-950 rounded-xl space-y-3 font-mono text-xs">
                         <div className="flex justify-between items-center text-[11px] text-slate-300">
                           <span>Fluxo de Caixa (Débito vs Crédito)</span>
-                          <span className="text-slate-400">Índice: {currentRevenue > 0 ? ((totalCredits / (totalDebits || 1)) * 100).toFixed(1) : "0.0"}% de compensação</span>
+                          <span className="text-slate-400">
+                            Índice:{" "}
+                            {currentRevenue > 0
+                              ? ((totalCredits / (totalDebits || 1)) * 100).toFixed(1)
+                              : "0.0"}
+                            % de compensação
+                          </span>
                         </div>
                         <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden flex">
                           <div
                             className="bg-indigo-500 h-full transition-all"
-                            style={{ width: `${Math.max(5, Math.min(95, (totalDebits / ((totalDebits + totalCredits) || 1)) * 100))}%` }}
+                            style={{
+                              width: `${Math.max(5, Math.min(95, (totalDebits / (totalDebits + totalCredits || 1)) * 100))}%`,
+                            }}
                           />
                           <div
                             className="bg-emerald-500 h-full transition-all"
-                            style={{ width: `${Math.max(5, Math.min(95, (totalCredits / ((totalDebits + totalCredits) || 1)) * 100))}%` }}
+                            style={{
+                              width: `${Math.max(5, Math.min(95, (totalCredits / (totalDebits + totalCredits || 1)) * 100))}%`,
+                            }}
                           />
                         </div>
                         <div className="flex justify-between text-[9px] text-slate-500 font-sans">
-                          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-indigo-500 rounded" /> Débitos (Consumidor/Escopo)</span>
-                          <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-500 rounded" /> Créditos de Fornecedores</span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-indigo-500 rounded" /> Débitos
+                            (Consumidor/Escopo)
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-emerald-500 rounded" /> Créditos de
+                            Fornecedores
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -646,9 +783,20 @@ export default function App() {
                       <div className="bg-amber-950/20 border border-amber-500/20 p-4 rounded-xl flex gap-3">
                         <BadgeAlert className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
                         <div className="space-y-1">
-                          <h4 className="text-xs font-bold text-amber-300">Análise de Risco Comercial para Cluintes RPA</h4>
+                          <h4 className="text-xs font-bold text-amber-300">
+                            Análise de Risco Comercial para Cluintes RPA
+                          </h4>
                           <p className="text-[11px] text-slate-300 leading-relaxed">
-                            Pessoas jurídicas sujeitas ao regime de débito e crédito perderão aproximadamente <strong>R$ {lostCreditsForClients.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong> em créditos caso comprem de você sem o destaque opcional do IBS/CBS por fora.
+                            Pessoas jurídicas sujeitas ao regime de débito e crédito perderão
+                            aproximadamente{" "}
+                            <strong>
+                              R${" "}
+                              {lostCreditsForClients.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </strong>{" "}
+                            em créditos caso comprem de você sem o destaque opcional do IBS/CBS por
+                            fora.
                           </p>
                           <div className="pt-1.5 flex gap-2">
                             <button
@@ -682,7 +830,8 @@ export default function App() {
                         Apuração e Consolidação de Entrada/Saída por CFOP
                       </h3>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        Valores agregados por Código Fiscal de Operações e Prestações (Requisito Fiscal SEFAZ)
+                        Valores agregados por Código Fiscal de Operações e Prestações (Requisito
+                        Fiscal SEFAZ)
                       </p>
                     </div>
                   </div>
@@ -693,22 +842,37 @@ export default function App() {
                         <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] tracking-wider bg-slate-900/35">
                           <th className="py-2.5 px-3 font-semibold text-slate-300">CFOP</th>
                           <th className="py-2.5 px-3 font-semibold text-slate-300">Tipo / Fluxo</th>
-                          <th className="py-2.5 px-3 font-semibold text-slate-300">Descrição Fiscal</th>
-                          <th className="py-2.5 px-3 font-semibold text-center text-slate-300">Docs</th>
-                          <th className="py-2.5 px-3 font-semibold text-right text-slate-300">Valor Total</th>
-                          <th className="py-2.5 px-3 font-semibold text-right text-slate-300">IBS Apurado</th>
-                          <th className="py-2.5 px-3 font-semibold text-right text-slate-300">CBS Apurado</th>
+                          <th className="py-2.5 px-3 font-semibold text-slate-300">
+                            Descrição Fiscal
+                          </th>
+                          <th className="py-2.5 px-3 font-semibold text-center text-slate-300">
+                            Docs
+                          </th>
+                          <th className="py-2.5 px-3 font-semibold text-right text-slate-300">
+                            Valor Total
+                          </th>
+                          <th className="py-2.5 px-3 font-semibold text-right text-slate-300">
+                            IBS Apurado
+                          </th>
+                          <th className="py-2.5 px-3 font-semibold text-right text-slate-300">
+                            CBS Apurado
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60 font-sans">
                         {cfopGroups.map((group) => (
-                          <tr key={`${group.cfop}-${group.direction}`} className="hover:bg-slate-900/30 transition">
+                          <tr
+                            key={`${group.cfop}-${group.direction}`}
+                            className="hover:bg-slate-900/30 transition"
+                          >
                             <td className="py-3 px-3 font-mono font-bold text-slate-100">
-                              <span className={`px-2 py-0.5 rounded text-[11px] ${
-                                group.direction === "entrada"
-                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/20"
-                                  : "bg-blue-950/60 text-blue-400 border border-blue-500/20"
-                              }`}>
+                              <span
+                                className={`px-2 py-0.5 rounded text-[11px] ${
+                                  group.direction === "entrada"
+                                    ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/20"
+                                    : "bg-blue-950/60 text-blue-400 border border-blue-500/20"
+                                }`}
+                              >
                                 {group.cfop}
                               </span>
                             </td>
@@ -726,13 +890,16 @@ export default function App() {
                               {group.count}
                             </td>
                             <td className="py-3 px-3 text-right font-mono text-slate-200 font-semibold">
-                              R$ {group.totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              R${" "}
+                              {group.totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </td>
                             <td className="py-3 px-3 text-right font-mono text-emerald-500/90">
-                              R$ {group.valIbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              R${" "}
+                              {group.valIbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </td>
                             <td className="py-3 px-3 text-right font-mono text-teal-400/90">
-                              R$ {group.valCbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              R${" "}
+                              {group.valCbs.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </td>
                           </tr>
                         ))}
@@ -745,30 +912,51 @@ export default function App() {
                     <div className="p-4 bg-emerald-950/10 border border-emerald-500/20 rounded-xl font-sans flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-emerald-400">Total de Entradas (Compra) por CFOP</span>
-                          <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono">CRÉDITO</span>
+                          <span className="text-xs font-bold text-emerald-400">
+                            Total de Entradas (Compra) por CFOP
+                          </span>
+                          <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono">
+                            CRÉDITO
+                          </span>
                         </div>
                         <p className="text-xl font-mono font-bold text-emerald-300 mt-2">
-                          R$ {cfopGroups.filter(g => g.direction === "entrada").reduce((sum, g) => sum + g.totalVal, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          R${" "}
+                          {cfopGroups
+                            .filter((g) => g.direction === "entrada")
+                            .reduce((sum, g) => sum + g.totalVal, 0)
+                            .toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-1 font-sans">Soma de todos os insumos operacionais e mercadorias adquiridas agrupados por CFOP.</p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-sans">
+                          Soma de todos os insumos operacionais e mercadorias adquiridas agrupados
+                          por CFOP.
+                        </p>
                       </div>
 
                       {/* Total de Entradas por Tipo de Documento */}
                       <div className="mt-4 pt-3 border-t border-emerald-500/10">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total de Entradas por Tipo de Documento</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                          Total de Entradas por Tipo de Documento
+                        </p>
                         <div className="grid grid-cols-2 gap-2">
                           {["NF-e", "NFC-e", "CT-e", "NFS-e"].map((t) => {
-                            const docsOfType = documents.filter(d => d.direction === "entrada" && d.type === t);
+                            const docsOfType = documents.filter(
+                              (d) => d.direction === "entrada" && d.type === t,
+                            );
                             const totalVal = docsOfType.reduce((s, d) => s + d.totalVal, 0);
                             const count = docsOfType.length;
                             return (
-                              <div key={t} className="p-2 bg-slate-900/60 border border-slate-800 rounded-lg">
+                              <div
+                                key={t}
+                                className="p-2 bg-slate-900/60 border border-slate-800 rounded-lg"
+                              >
                                 <p className="text-[9px] font-bold text-slate-400">{t}</p>
                                 <p className="text-xs font-bold text-emerald-400 font-mono mt-0.5">
-                                  R$ {totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  R${" "}
+                                  {totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                 </p>
-                                <p className="text-[8px] text-slate-500 mt-0.5 font-mono">{count} doc(s)</p>
+                                <p className="text-[8px] text-slate-500 mt-0.5 font-mono">
+                                  {count} doc(s)
+                                </p>
                               </div>
                             );
                           })}
@@ -779,30 +967,50 @@ export default function App() {
                     <div className="p-4 bg-indigo-950/10 border border-indigo-500/20 rounded-xl font-sans flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-indigo-400">Total de Saídas (Venda) por CFOP</span>
-                          <span className="text-[10px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded font-mono">DÉBITO</span>
+                          <span className="text-xs font-bold text-indigo-400">
+                            Total de Saídas (Venda) por CFOP
+                          </span>
+                          <span className="text-[10px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded font-mono">
+                            DÉBITO
+                          </span>
                         </div>
                         <p className="text-xl font-mono font-bold text-indigo-300 mt-2">
-                          R$ {cfopGroups.filter(g => g.direction === "saida").reduce((sum, g) => sum + g.totalVal, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          R${" "}
+                          {cfopGroups
+                            .filter((g) => g.direction === "saida")
+                            .reduce((sum, g) => sum + g.totalVal, 0)
+                            .toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-1">Soma de todas as vendas e prestações de serviço agrupadas por CFOP.</p>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Soma de todas as vendas e prestações de serviço agrupadas por CFOP.
+                        </p>
                       </div>
 
                       {/* Total de Saídas por Tipo de Documento */}
                       <div className="mt-4 pt-3 border-t border-indigo-500/10">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total de Saídas por Tipo de Documento</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                          Total de Saídas por Tipo de Documento
+                        </p>
                         <div className="grid grid-cols-2 gap-2">
                           {["NF-e", "NFC-e", "CT-e", "NFS-e"].map((t) => {
-                            const docsOfType = documents.filter(d => d.direction === "saida" && d.type === t);
+                            const docsOfType = documents.filter(
+                              (d) => d.direction === "saida" && d.type === t,
+                            );
                             const totalVal = docsOfType.reduce((s, d) => s + d.totalVal, 0);
                             const count = docsOfType.length;
                             return (
-                              <div key={t} className="p-2 bg-slate-900/60 border border-slate-800 rounded-lg">
+                              <div
+                                key={t}
+                                className="p-2 bg-slate-900/60 border border-slate-800 rounded-lg"
+                              >
                                 <p className="text-[9px] font-bold text-slate-400">{t}</p>
                                 <p className="text-xs font-bold text-indigo-400 font-mono mt-0.5">
-                                  R$ {totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                                  R${" "}
+                                  {totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                                 </p>
-                                <p className="text-[8px] text-slate-500 mt-0.5 font-mono">{count} doc(s)</p>
+                                <p className="text-[8px] text-slate-500 mt-0.5 font-mono">
+                                  {count} doc(s)
+                                </p>
                               </div>
                             );
                           })}
@@ -825,16 +1033,25 @@ export default function App() {
                 className="bg-[#10162a]/90 border border-slate-800/80 p-6 rounded-2xl space-y-6"
               >
                 <div>
-                  <h3 className="text-base font-extrabold text-white">Simulador Proativo de Transição Tributária</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Define variáveis operacionais para estimar a carga sob a Reforma Tributária (LC 214/2025) sem dependência exclusiva de arquivos XML.</p>
+                  <h3 className="text-base font-extrabold text-white">
+                    Simulador Proativo de Transição Tributária
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Define variáveis operacionais para estimar a carga sob a Reforma Tributária (LC
+                    214/2025) sem dependência exclusiva de arquivos XML.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                   <div className="space-y-6">
                     <div>
                       <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-slate-300">Faturamento Mensal Estimado de Saídas</span>
-                        <strong className="font-mono text-indigo-400">R$ {totalSales.toLocaleString("pt-BR")}</strong>
+                        <span className="text-slate-300">
+                          Faturamento Mensal Estimado de Saídas
+                        </span>
+                        <strong className="font-mono text-indigo-400">
+                          R$ {totalSales.toLocaleString("pt-BR")}
+                        </strong>
                       </div>
                       <input
                         type="range"
@@ -846,13 +1063,19 @@ export default function App() {
                         disabled={hasDocs}
                         className="w-full mt-2.5 accent-indigo-500 cursor-pointer disabled:opacity-40"
                       />
-                      <p className="text-[10px] text-slate-500 mt-1">Alíquota Dual Cheia incidente: 26.5% no Regime Normal.</p>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Alíquota Dual Cheia incidente: 26.5% no Regime Normal.
+                      </p>
                     </div>
 
                     <div>
                       <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-slate-300">Volume de Compras / Insumos tributados</span>
-                        <strong className="font-mono text-teal-400">R$ {totalPurchases.toLocaleString("pt-BR")}</strong>
+                        <span className="text-slate-300">
+                          Volume de Compras / Insumos tributados
+                        </span>
+                        <strong className="font-mono text-teal-400">
+                          R$ {totalPurchases.toLocaleString("pt-BR")}
+                        </strong>
                       </div>
                       <input
                         type="range"
@@ -864,12 +1087,16 @@ export default function App() {
                         disabled={hasDocs}
                         className="w-full mt-2.5 accent-teal-500 cursor-pointer disabled:opacity-40"
                       />
-                      <p className="text-[10px] text-slate-500 mt-1">Gera créditos que abatem do imposto devido conforme cadeia de fornecedores.</p>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Gera créditos que abatem do imposto devido conforme cadeia de fornecedores.
+                      </p>
                     </div>
 
                     {hasDocs && (
                       <div className="p-3 bg-amber-950/20 border border-amber-500/20 rounded-xl text-amber-200 text-xs">
-                        ⚠️ <strong>Modo XML Ativo:</strong> Como você possui arquivos XMLs carregados, estes estimadores estão temporariamente ignorados na apuração oficial. Exclua os documentos na aba XML para simular cenários livremente.
+                        ⚠️ <strong>Modo XML Ativo:</strong> Como você possui arquivos XMLs
+                        carregados, estes estimadores estão temporariamente ignorados na apuração
+                        oficial. Exclua os documentos na aba XML para simular cenários livremente.
                       </div>
                     )}
                   </div>
@@ -877,8 +1104,12 @@ export default function App() {
                   <div className="space-y-6">
                     <div>
                       <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-slate-300">% de Compras de fornecedores do Simples Nacional</span>
-                        <strong className="font-mono text-amber-500">{purchasesFromSimplesRatio}%</strong>
+                        <span className="text-slate-300">
+                          % de Compras de fornecedores do Simples Nacional
+                        </span>
+                        <strong className="font-mono text-amber-500">
+                          {purchasesFromSimplesRatio}%
+                        </strong>
                       </div>
                       <input
                         type="range"
@@ -890,14 +1121,19 @@ export default function App() {
                         className="w-full mt-2.5 accent-amber-500 cursor-pointer"
                       />
                       <p className="text-[10px] text-slate-500 mt-1">
-                        Insumos vindos de optantes do Simples geram apenas ~6% de crédito, elevando seu imposto devido.
+                        Insumos vindos de optantes do Simples geram apenas ~6% de crédito, elevando
+                        seu imposto devido.
                       </p>
                     </div>
 
                     <div>
                       <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-slate-300">% de Vendas destinadas a empresas RPA (B2B)</span>
-                        <strong className="font-mono text-blue-400">{salesToCompaniesRatio}%</strong>
+                        <span className="text-slate-300">
+                          % de Vendas destinadas a empresas RPA (B2B)
+                        </span>
+                        <strong className="font-mono text-blue-400">
+                          {salesToCompaniesRatio}%
+                        </strong>
                       </div>
                       <input
                         type="range"
@@ -909,7 +1145,8 @@ export default function App() {
                         className="w-full mt-2.5 accent-blue-500 cursor-pointer"
                       />
                       <p className="text-[10px] text-slate-500 mt-1">
-                        Mede a dependência comercial corporativa, onde a falta de destaque de IBS/CBS afeta seus clientes.
+                        Mede a dependência comercial corporativa, onde a falta de destaque de
+                        IBS/CBS afeta seus clientes.
                       </p>
                     </div>
                   </div>
@@ -927,11 +1164,7 @@ export default function App() {
                 transition={{ duration: 0.2 }}
                 className="bg-[#10162a]/95 border border-slate-800/80 p-6 rounded-2xl"
               >
-                <XmlUploader
-                  documents={documents}
-                  onDocumentsChange={setDocuments}
-                  myCnpj={cnpj}
-                />
+                <XmlUploader documents={documents} onDocumentsChange={setDocuments} myCnpj={cnpj} />
               </motion.div>
             )}
 
@@ -954,7 +1187,10 @@ export default function App() {
                         Portal de Inconformidades & Notificação de Fornecedores
                       </h3>
                       <p className="text-xs text-slate-400 leading-relaxed">
-                        Identifique notas de fornecedores RPA sem destaque dos tributos IBS e CBS regulados pela LC 214/2025. Gere notificações extrajudiciais instantâneas exigindo o preenchimento correto das tags fiscais para garantir seus créditos de 26,5%.
+                        Identifique notas de fornecedores RPA sem destaque dos tributos IBS e CBS
+                        regulados pela LC 214/2025. Gere notificações extrajudiciais instantâneas
+                        exigindo o preenchimento correto das tags fiscais para garantir seus
+                        créditos de 26,5%.
                       </p>
                     </div>
                   </div>
@@ -973,8 +1209,13 @@ export default function App() {
                       {nonCompliantDocs.length === 0 ? (
                         <div className="p-6 border border-dashed border-slate-800 rounded-lg text-center space-y-1 bg-slate-900/15">
                           <CheckCircle className="w-6 h-6 text-emerald-500 mx-auto" />
-                          <p className="text-[11px] text-slate-300 font-medium">Nenhuma inconformidade no lote atual</p>
-                          <p className="text-[9px] text-slate-500">Todos os documentos analisados no regime RPA apresentam destaque de impostos.</p>
+                          <p className="text-[11px] text-slate-300 font-medium">
+                            Nenhuma inconformidade no lote atual
+                          </p>
+                          <p className="text-[9px] text-slate-500">
+                            Todos os documentos analisados no regime RPA apresentam destaque de
+                            impostos.
+                          </p>
                         </div>
                       ) : (
                         <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
@@ -985,8 +1226,15 @@ export default function App() {
                             >
                               <div className="space-y-0.5 truncate">
                                 <p className="font-bold text-slate-200 truncate">{doc.emitente}</p>
-                                <p className="text-[9px] text-slate-500 font-mono truncate">Chave: {doc.chave.slice(0, 12)}...{doc.chave.slice(-10)}</p>
-                                <p className="text-[9px] text-amber-400 font-mono">Simulado: R$ {doc.totalVal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                                <p className="text-[9px] text-slate-500 font-mono truncate">
+                                  Chave: {doc.chave.slice(0, 12)}...{doc.chave.slice(-10)}
+                                </p>
+                                <p className="text-[9px] text-amber-400 font-mono">
+                                  Simulado: R${" "}
+                                  {doc.totalVal.toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                  })}
+                                </p>
                               </div>
                               <button
                                 onClick={() => {
@@ -1013,7 +1261,9 @@ export default function App() {
 
                       <div className="space-y-3 font-sans">
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nome / Razão Social do Fornecedor</label>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            Nome / Razão Social do Fornecedor
+                          </label>
                           <input
                             type="text"
                             value={supplierName}
@@ -1025,7 +1275,9 @@ export default function App() {
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">CNPJ do Fornecedor</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              CNPJ do Fornecedor
+                            </label>
                             <input
                               type="text"
                               value={supplierCnpj}
@@ -1035,7 +1287,9 @@ export default function App() {
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">E-mail do Fornecedor</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              E-mail do Fornecedor
+                            </label>
                             <input
                               type="email"
                               value={supplierEmail}
@@ -1048,7 +1302,9 @@ export default function App() {
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Chave de Acesso / Nota</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              Chave de Acesso / Nota
+                            </label>
                             <input
                               type="text"
                               value={supplierDocKey}
@@ -1058,7 +1314,9 @@ export default function App() {
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Total (R$)</label>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              Valor Total (R$)
+                            </label>
                             <input
                               type="text"
                               value={supplierDocValue}
@@ -1073,7 +1331,8 @@ export default function App() {
                       {/* Default fillers banner if nothing entered */}
                       {!supplierName && (
                         <p className="text-[10px] text-slate-500 italic">
-                          Dica: Clique no botão "Preencher Carta" em uma nota inconformada acima para carregar as chaves fiscais automaticamente no formulário.
+                          Dica: Clique no botão "Preencher Carta" em uma nota inconformada acima
+                          para carregar as chaves fiscais automaticamente no formulário.
                         </p>
                       )}
                     </div>
@@ -1108,7 +1367,9 @@ export default function App() {
                             const letterEl = document.getElementById("letter-sheet-text");
                             const text = letterEl ? letterEl.innerText : "";
                             const subject = `NOTIFICAÇÃO DE INCONFORMIDADE FISCAL (IBS/CBS) - NF-e ${supplierDocKey || "REFORMA TRIBUTÁRIA"}`;
-                            window.open(`mailto:${supplierEmail || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`);
+                            window.open(
+                              `mailto:${supplierEmail || ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`,
+                            );
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-950 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-900 rounded-lg text-[10px] font-extrabold transition cursor-pointer"
                         >
@@ -1162,55 +1423,114 @@ export default function App() {
                         </div>
 
                         <div className="space-y-1 text-[11px] text-slate-600 font-sans pb-3">
-                          <p><strong>Destinatário:</strong> {supplierName || "___________________________________________"}</p>
-                          <p><strong>CNPJ do Fornecedor:</strong> {supplierCnpj || "___________________________"}</p>
-                          <p><strong>E-mail Comercial/Fiscal:</strong> <span className={supplierEmail ? "" : "text-slate-400"}>{supplierEmail || "[Preencha o e-mail ou utilize o link acima]"}</span></p>
-                          <p><strong>Assunto:</strong> Solicitação urgente de retificação fiscal (Destaque de IBS/CBS - Ano Fiscal 2026+)</p>
-                          <p><strong>Referência:</strong> Lei Complementar nº 214/2025 e Reforma Tributária (Emenda Constitucional 132/2023)</p>
+                          <p>
+                            <strong>Destinatário:</strong>{" "}
+                            {supplierName || "___________________________________________"}
+                          </p>
+                          <p>
+                            <strong>CNPJ do Fornecedor:</strong>{" "}
+                            {supplierCnpj || "___________________________"}
+                          </p>
+                          <p>
+                            <strong>E-mail Comercial/Fiscal:</strong>{" "}
+                            <span className={supplierEmail ? "" : "text-slate-400"}>
+                              {supplierEmail || "[Preencha o e-mail ou utilize o link acima]"}
+                            </span>
+                          </p>
+                          <p>
+                            <strong>Assunto:</strong> Solicitação urgente de retificação fiscal
+                            (Destaque de IBS/CBS - Ano Fiscal 2026+)
+                          </p>
+                          <p>
+                            <strong>Referência:</strong> Lei Complementar nº 214/2025 e Reforma
+                            Tributária (Emenda Constitucional 132/2023)
+                          </p>
                         </div>
 
                         <p className="text-justify font-sans leading-relaxed text-[11px]">
-                          Prezado departamento tributário e faturamento da empresa <strong>{supplierName || "______________________"}</strong>,
+                          Prezado departamento tributário e faturamento da empresa{" "}
+                          <strong>{supplierName || "______________________"}</strong>,
                         </p>
 
                         <p className="text-justify text-[11px] leading-relaxed">
-                          Serve a presente notificação extrajudicial para solicitar, em caráter de urgência, a revisão e correção da nota fiscal correspondente à operação identificada pelos dados abaixo indicados:
+                          Serve a presente notificação extrajudicial para solicitar, em caráter de
+                          urgência, a revisão e correção da nota fiscal correspondente à operação
+                          identificada pelos dados abaixo indicados:
                         </p>
 
                         <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg space-y-1 text-[11px] font-mono select-all">
-                          <p><strong>• Chave de Acesso da Nota:</strong> {supplierDocKey || "________________________________________________"}</p>
-                          <p><strong>• Valor Total Declarado:</strong> R$ {supplierDocValue ? parseFloat(supplierDocValue).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "_________,___"}</p>
-                          <p><strong>• Alíquota Dual Esperada:</strong> IBS (17,7%) e CBS (8,8%) - Total de 26,5% de aproveitamento de crédito fiscal</p>
+                          <p>
+                            <strong>• Chave de Acesso da Nota:</strong>{" "}
+                            {supplierDocKey || "________________________________________________"}
+                          </p>
+                          <p>
+                            <strong>• Valor Total Declarado:</strong> R${" "}
+                            {supplierDocValue
+                              ? parseFloat(supplierDocValue).toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                })
+                              : "_________,___"}
+                          </p>
+                          <p>
+                            <strong>• Alíquota Dual Esperada:</strong> IBS (17,7%) e CBS (8,8%) -
+                            Total de 26,5% de aproveitamento de crédito fiscal
+                          </p>
                         </div>
 
                         <p className="text-justify text-[11px] leading-relaxed">
-                          Verificamos por análise de lote no nosso portal que, embora vossa instituição esteja devidamente registrada sob o regime de **Regime Tecnológico de Apuração (RPA - Lucro Real/Presumido)**, o referido documento foi emitido e entregue à nossa organização **sem o destaque legítimo de IBS e CBS** em suas respectivas tags e campos tributários nativos XML.
+                          Verificamos por análise de lote no nosso portal que, embora vossa
+                          instituição esteja devidamente registrada sob o regime de **Regime
+                          Tecnológico de Apuração (RPA - Lucro Real/Presumido)**, o referido
+                          documento foi emitido e entregue à nossa organização **sem o destaque
+                          legítimo de IBS e CBS** em suas respectivas tags e campos tributários
+                          nativos XML.
                         </p>
 
                         <p className="text-justify text-[11px] leading-relaxed">
-                          Conforme os mandamentos tributários trazidos pela **Lei Complementar de Regulamentação da Reforma Tributária (LC 214/2025)**, o fornecedor que não promove o correto destaque do IVA Dual impede a apropriação dos créditos financeiros cumulativos correspondentes previstos na legislação de faturamento. Esta omissão gera grave prejuízo financeiro direto no valor estimado de **R$ {supplierDocValue ? (parseFloat(supplierDocValue) * 0.265).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "_________,___"}** em nossa escrituração consolidada.
+                          Conforme os mandamentos tributários trazidos pela **Lei Complementar de
+                          Regulamentação da Reforma Tributária (LC 214/2025)**, o fornecedor que não
+                          promove o correto destaque do IVA Dual impede a apropriação dos créditos
+                          financeiros cumulativos correspondentes previstos na legislação de
+                          faturamento. Esta omissão gera grave prejuízo financeiro direto no valor
+                          estimado de **R${" "}
+                          {supplierDocValue
+                            ? (parseFloat(supplierDocValue) * 0.265).toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })
+                            : "_________,___"}
+                          ** em nossa escrituração consolidada.
                         </p>
 
                         <p className="text-justify text-[11px] leading-relaxed font-bold">
-                          Desta forma, para evitar perdas tributárias que prejudicam nossa colaboração comercial, solicitamos que nos enviem no prazo de até 72 horas úteis:
+                          Desta forma, para evitar perdas tributárias que prejudicam nossa
+                          colaboração comercial, solicitamos que nos enviem no prazo de até 72 horas
+                          úteis:
                         </p>
 
                         <div className="pl-4 space-y-1.5 text-[11px] text-slate-700">
-                          <p>1. Transmissão de <strong>Nota Fiscal Retificadora / de Ajuste</strong> destacando o valor correspondente de IBS e CBS;</p>
-                          <p>2. Ou, justificativa devidamente embasada pelo seu setor de conformidade fiscal justificando a incidência de regimes especiais ou imunidade aplicáveis à operação analisada.</p>
+                          <p>
+                            1. Transmissão de <strong>Nota Fiscal Retificadora / de Ajuste</strong>{" "}
+                            destacando o valor correspondente de IBS e CBS;
+                          </p>
+                          <p>
+                            2. Ou, justificativa devidamente embasada pelo seu setor de conformidade
+                            fiscal justificando a incidência de regimes especiais ou imunidade
+                            aplicáveis à operação analisada.
+                          </p>
                         </div>
 
                         <p className="text-justify text-[11px] leading-relaxed">
-                          Contamos com o vosso profissionalismo fiscal e com a presteza de sempre no ambiente do novo ecossistema tributário brasileiro.
+                          Contamos com o vosso profissionalismo fiscal e com a presteza de sempre no
+                          ambiente do novo ecossistema tributário brasileiro.
                         </p>
 
-                        <p className="pt-4 text-justify text-[11px]">
-                          Atenciosamente,
-                        </p>
+                        <p className="pt-4 text-justify text-[11px]">Atenciosamente,</p>
 
                         <div className="pt-2 text-[11.5px] font-sans">
                           <p className="font-bold">{companyName}</p>
-                          <p className="text-slate-500 font-mono">CNPJ da Empresa Contratante: {cnpj}</p>
+                          <p className="text-slate-500 font-mono">
+                            CNPJ da Empresa Contratante: {cnpj}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1235,7 +1555,9 @@ export default function App() {
                       <Cpu className="w-5 h-5 text-indigo-400" />
                       Dossiê Estratégico AI (Gemini Agent)
                     </h3>
-                    <p className="text-xs text-indigo-300">Auditoria cognitiva com base na modelagem integrada da Reforma do Consumo.</p>
+                    <p className="text-xs text-indigo-300">
+                      Auditoria cognitiva com base na modelagem integrada da Reforma do Consumo.
+                    </p>
                   </div>
 
                   <button
@@ -1265,7 +1587,8 @@ export default function App() {
                         Estruturando análise tributária dual...
                       </p>
                       <p className="text-[10px] text-slate-500 max-w-sm">
-                        O Gemini está avaliando seu regime e contrastando com o perfil competitivo para B2B e o creditamento residual do Simples Nacional.
+                        O Gemini está avaliando seu regime e contrastando com o perfil competitivo
+                        para B2B e o creditamento residual do Simples Nacional.
                       </p>
                     </div>
                   )}
@@ -1274,7 +1597,10 @@ export default function App() {
                     <div className="flex flex-col items-center justify-center text-center py-12 text-slate-500 space-y-3">
                       <HelpCircle className="w-10 h-10 text-slate-700" />
                       <p className="text-xs font-semibold text-slate-400">Nenhum parecer gerado.</p>
-                      <p className="text-[10px] text-slate-500 max-w-sm">Clique no botão "Gerar Parecer Inteligente" no topo para submeter faturamentos, XMLs e cadastros à IA do Gemini.</p>
+                      <p className="text-[10px] text-slate-500 max-w-sm">
+                        Clique no botão "Gerar Parecer Inteligente" no topo para submeter
+                        faturamentos, XMLs e cadastros à IA do Gemini.
+                      </p>
                     </div>
                   )}
 
@@ -1289,8 +1615,13 @@ export default function App() {
                       {/* PDF Export Banner */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-indigo-950/40 border border-indigo-500/20 rounded-xl">
                         <div>
-                          <p className="text-xs font-bold text-indigo-300">Parecer Técnico Fiscal Pronto</p>
-                          <p className="text-[10px] text-slate-400">Exportar o diagnóstico do Gemini formatado em PDF para apresentação executiva.</p>
+                          <p className="text-xs font-bold text-indigo-300">
+                            Parecer Técnico Fiscal Pronto
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            Exportar o diagnóstico do Gemini formatado em PDF para apresentação
+                            executiva.
+                          </p>
                         </div>
                         <button
                           onClick={handleExportPDF}
@@ -1333,7 +1664,9 @@ export default function App() {
                       Tutorial de Uso - Simples Apuração RTC
                     </h3>
                     <p className="text-xs text-slate-400 leading-relaxed font-sans">
-                      Entenda como maximizar o uso desta plataforma de inteligência fiscal para simular, auditar, corrigir inconformidades de fornecedores e emitir pareceres estratégicos sobre a Reforma Tributária.
+                      Entenda como maximizar o uso desta plataforma de inteligência fiscal para
+                      simular, auditar, corrigir inconformidades de fornecedores e emitir pareceres
+                      estratégicos sobre a Reforma Tributária.
                     </p>
                   </div>
                 </div>
@@ -1343,112 +1676,184 @@ export default function App() {
                   {/* Step 1 */}
                   <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
                     <div className="flex justify-between items-start">
-                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">01</span>
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">
+                        01
+                      </span>
                       <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
                         <FileText className="w-4 h-4 text-indigo-400" />
                       </div>
                     </div>
-                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 1: Importar os XMLs</p>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                      Passo 1: Importar os XMLs
+                    </p>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed">
-                      Acesse a aba <strong>Análise de XMLs Fiscais</strong> e arraste ou selecione os arquivos XML das suas notas. A plataforma suporta em lote:
+                      Acesse a aba <strong>Análise de XMLs Fiscais</strong> e arraste ou selecione
+                      os arquivos XML das suas notas. A plataforma suporta em lote:
                     </p>
                     <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
-                      <li><strong>NF-e</strong> (Notas de Mercadorias)</li>
-                      <li><strong>NFC-e</strong> (Cupom de Consumidor)</li>
-                      <li><strong>CT-e</strong> (Conhecimento de Transporte)</li>
-                      <li><strong>NFS-e</strong> (Notas de Serviços de Prefeituras)</li>
+                      <li>
+                        <strong>NF-e</strong> (Notas de Mercadorias)
+                      </li>
+                      <li>
+                        <strong>NFC-e</strong> (Cupom de Consumidor)
+                      </li>
+                      <li>
+                        <strong>CT-e</strong> (Conhecimento de Transporte)
+                      </li>
+                      <li>
+                        <strong>NFS-e</strong> (Notas de Serviços de Prefeituras)
+                      </li>
                     </ul>
                   </div>
 
                   {/* Step 2 */}
                   <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
                     <div className="flex justify-between items-start">
-                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">02</span>
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">
+                        02
+                      </span>
                       <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
                         <Settings className="w-4 h-4 text-indigo-400" />
                       </div>
                     </div>
-                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 2: Configurar Empresa</p>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                      Passo 2: Configurar Empresa
+                    </p>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed">
-                      Ajuste os dados cadastrais da sua empresa na barra lateral ou nos painéis superiores para guiar a lógica fiscal:
+                      Ajuste os dados cadastrais da sua empresa na barra lateral ou nos painéis
+                      superiores para guiar a lógica fiscal:
                     </p>
                     <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
-                      <li><strong>Razão Social</strong> e <strong>CNPJ</strong> para que o leitor diferencie automaticamente Entradas (compras) e Saídas (vendas).</li>
-                      <li><strong>Regime Tributário</strong> (Simples Nacional vs RPA) para calcular a sua apuração dual de alíquotas.</li>
+                      <li>
+                        <strong>Razão Social</strong> e <strong>CNPJ</strong> para que o leitor
+                        diferencie automaticamente Entradas (compras) e Saídas (vendas).
+                      </li>
+                      <li>
+                        <strong>Regime Tributário</strong> (Simples Nacional vs RPA) para calcular a
+                        sua apuração dual de alíquotas.
+                      </li>
                     </ul>
                   </div>
 
                   {/* Step 3 */}
                   <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
                     <div className="flex justify-between items-start">
-                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">03</span>
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">
+                        03
+                      </span>
                       <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
                         <TrendingUp className="w-4 h-4 text-indigo-400" />
                       </div>
                     </div>
-                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 3: Simular Parâmetros</p>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                      Passo 3: Simular Parâmetros
+                    </p>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed">
-                      Na aba <strong>Simulador de Parâmetros</strong>, manipule as variáveis para calcular o impacto da reforma que começa em 2026:
+                      Na aba <strong>Simulador de Parâmetros</strong>, manipule as variáveis para
+                      calcular o impacto da reforma que começa em 2026:
                     </p>
                     <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
-                      <li>Defina o limite de compras de fornecedores do Simples para ver o efeito da perda de créditos de IBS/CBS.</li>
-                      <li>Simule o recolhimento do IVA \"Por Fora\" do Simples Nacional para restaurar competitividade nas vendas B2B.</li>
+                      <li>
+                        Defina o limite de compras de fornecedores do Simples para ver o efeito da
+                        perda de créditos de IBS/CBS.
+                      </li>
+                      <li>
+                        Simule o recolhimento do IVA \"Por Fora\" do Simples Nacional para restaurar
+                        competitividade nas vendas B2B.
+                      </li>
                     </ul>
                   </div>
 
                   {/* Step 4 */}
                   <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
                     <div className="flex justify-between items-start">
-                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">04</span>
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">
+                        04
+                      </span>
                       <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
                         <AlertTriangle className="w-4 h-4 text-indigo-400" />
                       </div>
                     </div>
-                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 4: Auditoria de Notas</p>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                      Passo 4: Auditoria de Notas
+                    </p>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed">
-                      Navegue para a aba <strong>Filtro de Inconformidades</strong>. O sistema filtra automaticamente as notas RPA de entrada que não destacaram IBS (17,7%) ou CBS (8,8%):
+                      Navegue para a aba <strong>Filtro de Inconformidades</strong>. O sistema
+                      filtra automaticamente as notas RPA de entrada que não destacaram IBS (17,7%)
+                      ou CBS (8,8%):
                     </p>
                     <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
-                      <li>Visualize o valor exato do <strong>crédito fiscal perdido</strong>.</li>
-                      <li>Clique em <strong>\"Preencher Carta\"</strong> para carregar os dados de forma instantânea no gerador de notificação.</li>
+                      <li>
+                        Visualize o valor exato do <strong>crédito fiscal perdido</strong>.
+                      </li>
+                      <li>
+                        Clique em <strong>\"Preencher Carta\"</strong> para carregar os dados de
+                        forma instantânea no gerador de notificação.
+                      </li>
                     </ul>
                   </div>
 
                   {/* Step 5 */}
                   <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
                     <div className="flex justify-between items-start">
-                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">05</span>
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">
+                        05
+                      </span>
                       <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
                         <CheckCircle className="w-4 h-4 text-indigo-400" />
                       </div>
                     </div>
-                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 5: Enviar Notificação</p>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                      Passo 5: Enviar Notificação
+                    </p>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed font-sans">
                       Com os dados do fornecedor carregados ou digitados manualmente:
                     </p>
                     <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
-                      <li>Clique em <strong>Copiar Texto</strong> para colar em qualquer ferramenta de chat institucional ou portal fiscal.</li>
-                      <li>Use o botão <strong>Enviar por E-mail</strong> para disparar via cliente nativo.</li>
-                      <li>Use <strong>Imprimir</strong> para gerar um PDF formal assinado pela diretoria.</li>
+                      <li>
+                        Clique em <strong>Copiar Texto</strong> para colar em qualquer ferramenta de
+                        chat institucional ou portal fiscal.
+                      </li>
+                      <li>
+                        Use o botão <strong>Enviar por E-mail</strong> para disparar via cliente
+                        nativo.
+                      </li>
+                      <li>
+                        Use <strong>Imprimir</strong> para gerar um PDF formal assinado pela
+                        diretoria.
+                      </li>
                     </ul>
                   </div>
 
                   {/* Step 6 */}
                   <div className="bg-[#10162a]/90 border border-slate-800 p-5 rounded-xl space-y-3 font-sans">
                     <div className="flex justify-between items-start">
-                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">06</span>
+                      <span className="text-xl font-mono font-extrabold text-indigo-500/40">
+                        06
+                      </span>
                       <div className="p-2 bg-indigo-950/40 border border-indigo-500/20 rounded-lg">
                         <Cpu className="w-4 h-4 text-indigo-400" />
                       </div>
                     </div>
-                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">Passo 6: Parecer & Exportação</p>
+                    <p className="font-bold text-slate-200 text-xs uppercase tracking-wider">
+                      Passo 6: Parecer & Exportação
+                    </p>
                     <p className="text-[11.5px] text-slate-400 leading-relaxed font-sans">
                       Para gerar a consolidação e fundamentação legal para a junta diretiva:
                     </p>
                     <ul className="text-[10px] text-slate-500 space-y-1 pl-4 list-disc font-sans">
-                      <li>Vá até a aba <strong>Dossiê Inteligente AI</strong> e clique em \"Gerar Parecer Inteligente\".</li>
-                      <li>Uma análise gerada sob medida pelo Gemini apoiará na tomada de decisão fiscal estratégica.</li>
-                      <li>Após gerado, você pode exportar tudo formatado em <strong>PDF Certificado</strong>.</li>
+                      <li>
+                        Vá até a aba <strong>Dossiê Inteligente AI</strong> e clique em \"Gerar
+                        Parecer Inteligente\".
+                      </li>
+                      <li>
+                        Uma análise gerada sob medida pelo Gemini apoiará na tomada de decisão
+                        fiscal estratégica.
+                      </li>
+                      <li>
+                        Após gerado, você pode exportar tudo formatado em{" "}
+                        <strong>PDF Certificado</strong>.
+                      </li>
                     </ul>
                   </div>
                 </div>
@@ -1457,21 +1862,29 @@ export default function App() {
                 <div className="p-4 bg-indigo-950/20 border border-indigo-500/20 text-indigo-300 text-xs rounded-xl flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-indigo-400 shrink-0" />
                   <p className="font-sans text-[11px] leading-normal">
-                    <strong>Alerta de Conformidade Legal:</strong> O destaque de IBS e CBS é um direito do adquirente nas operações sujeitas ao regime não-cumulativo da EC 132/2023. O envio da notificação regulariza os saldos credores de insumos industriais de forma diplomática com o faturamento de seus fornecedores parceiros.
+                    <strong>Alerta de Conformidade Legal:</strong> O destaque de IBS e CBS é um
+                    direito do adquirente nas operações sujeitas ao regime não-cumulativo da EC
+                    132/2023. O envio da notificação regulariza os saldos credores de insumos
+                    industriais de forma diplomática com o faturamento de seus fornecedores
+                    parceiros.
                   </p>
                 </div>
               </motion.div>
             )}
-
           </AnimatePresence>
         </div>
-
       </main>
 
       {/* Footer detailing legal context */}
       <footer className="border-t border-slate-800/80 bg-[#070b13] py-8 px-6 text-center text-slate-500 text-[11px] mt-16 font-mono space-y-1">
-        <p>Simples Apuração RTC — Licenciado sob a Lei Complementar nº 214/2025 para finalidade exclusiva de simulação fiscal e adensamento cognitivo.</p>
-        <p className="mt-1">Simples Apuração RTC &copy; {new Date().getFullYear()} — Motor de apuração IBS/CBS por LC 214/2025.</p>
+        <p>
+          Simples Apuração RTC — Licenciado sob a Lei Complementar nº 214/2025 para finalidade
+          exclusiva de simulação fiscal e adensamento cognitivo.
+        </p>
+        <p className="mt-1">
+          Simples Apuração RTC &copy; {new Date().getFullYear()} — Motor de apuração IBS/CBS por LC
+          214/2025.
+        </p>
       </footer>
     </div>
   );

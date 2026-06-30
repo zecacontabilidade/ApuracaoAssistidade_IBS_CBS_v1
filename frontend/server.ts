@@ -13,7 +13,9 @@ function getGeminiClient() {
   if (!aiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn("WARNING: GEMINI_API_KEY environment variable is not set. AI features might fail.");
+      console.warn(
+        "WARNING: GEMINI_API_KEY environment variable is not set. AI features might fail.",
+      );
     }
     aiClient = new GoogleGenAI({
       apiKey: apiKey || "MOCK_KEY_FOR_BUILD",
@@ -36,7 +38,14 @@ async function startServer() {
   // API route to calculate taxes or analyze with Gemini
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { regime, totalPurchases, totalSales, documents, purchasesFromSimplesCount, salesToCompaniesCount } = req.body;
+      const {
+        regime,
+        totalPurchases,
+        totalSales,
+        documents,
+        purchasesFromSimplesCount,
+        salesToCompaniesCount,
+      } = req.body;
 
       // Privacy Guard: ensure no sensitive keys, CNPJs, or company names are present in metadata sent to AI.
       // We explicitly filter and clean documents context before compiling the prompt.
@@ -120,7 +129,7 @@ Sua chave de API do Gemini não está configurada nos segredos do sistema. Todav
 4. **Recomendação Preliminar**:
    - Avaliar a alteração para o regime **RPA** ou optar pelo recolhimento de IBS/CBS pelo regime geral (por fora do Simples Nacional), preservando a competitividade no varejo corporativo B2B e maximizando o aproveitamento de créditos na cadeia produtiva.
 
-*Insira sua GEMINI_API_KEY no painel de segredos para obter um relatório personalizado ultra-detalhado gerado por Inteligência Artificial cognitiva.*`
+*Insira sua GEMINI_API_KEY no painel de segredos para obter um relatório personalizado ultra-detalhado gerado por Inteligência Artificial cognitiva.*`,
         });
       }
 
@@ -136,12 +145,11 @@ Sua chave de API do Gemini não está configurada nos segredos do sistema. Todav
         success: true,
         text: response.text,
       });
-
     } catch (error: any) {
       console.error("Error analyzing with Gemini:", error);
       res.status(500).json({
         success: false,
-        error: error.message || "Erro interno de processamento na inteligência fiscal."
+        error: error.message || "Erro interno de processamento na inteligência fiscal.",
       });
     }
   });
@@ -156,13 +164,15 @@ Sua chave de API do Gemini não está configurada nos segredos do sistema. Todav
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Simples Apuração RTC] Back-end running securely on port http://localhost:${PORT}`);
+    console.log(
+      `[Simples Apuração RTC] Back-end running securely on port http://localhost:${PORT}`,
+    );
   });
 }
 
