@@ -68,6 +68,40 @@ Adotar o **layout convencional**: o cwd canônico do tooling do backend é
 A ADR 0004 permanece válida; este ADR **explicita e corrige** a suposição de namespace
 `backend.*`/cwd `/workspace` que havia se infiltrado no `post-create.sh` e na F0.4.
 
+## Adendo (F0.7a): Estratégia de cobertura por pacote
+
+Na F0.7a (motor fiscal), implementou-se a **medição de cobertura POR PACOTE** como
+resolução para o problema de gate global conflitante com limiares diferentes por
+domínio (engine ≥95%, aplicação ≥80%).
+
+**Mudanças no `backend/pyproject.toml`:**
+
+- Removido `fail_under = 80` de `[tool.coverage.report]` (fonte anterior de conflito).
+- Ativado no `[tool.pytest.ini_options]` o `addopts`:
+  ```
+  --cov=fiscal_engine
+  --cov-report=term-missing
+  --cov-report=xml:coverage.xml
+  --cov-fail-under=95
+  ```
+  O gate **por pacote** (`--cov=fiscal_engine --cov-fail-under=95`) aplica-se apenas
+  ao `fiscal_engine/`, garantindo que o motor tenha cobertura ≥95% sem impedir que
+  `app` (a ser criada na F1.0) tenha limiar diferente (≥80%).
+
+**Implicação para F1.0 e futuras:**
+
+Na F1.0, quando o pacote `app` for introduzido, a estratégia evolui para medição
+em **dois passos separados:**
+
+1. `pytest --cov=fiscal_engine --cov-fail-under=95` (motor puro)
+2. `pytest --cov=app --cov-fail-under=80` (aplicação, com tolerância maior para
+   testes de integração)
+
+Cada passo tem seu próprio gate. Assim, a regra de ouro (motor ≥95%, app ≥80%)
+fica explícita e exequível sem conflito global — foco em qualidade do domínio que
+importa mais (motorizações fiscais) e realismo na cobertura de glue code (FastAPI,
+IO, integração).
+
 ## Alternativas consideradas
 
 - **Opção A — `backend` como pacote top-level, cwd `/workspace`** (estado da F0.4 antes

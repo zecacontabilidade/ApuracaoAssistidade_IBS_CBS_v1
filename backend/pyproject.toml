@@ -147,32 +147,37 @@ ignore_missing_imports = true
 #   • workers/        ≥ 80%  — ativado em F1.x
 #   • frontend        ≥ 70%  — tooling F0.5 (vitest/coverage)
 #
-# ACHADO 3 (F0.4 — TODO F0.7): quando --cov-fail-under for ativado nos addopts
-# abaixo, remover fail_under de [tool.coverage.report] e manter numa única fonte.
+# ACHADO 3 (RESOLVIDO em F0.7a): com --cov-fail-under=95 ativo nos addopts
+# abaixo, o limiar passa a ter FONTE ÚNICA aqui; fail_under foi REMOVIDO de
+# [tool.coverage.report] para não haver dois números divergentes.
+#
+# TODO F1.0 (introdução do pacote 'app' com gate ≥ 80%): NÃO manter um gate
+# GLOBAL de 95 nos addopts, pois ele conflitaria com app ≥ 80. Medir POR
+# PACOTE em passos separados, p.ex.:
+#   pytest --cov=fiscal_engine --cov-fail-under=95
+#   pytest --cov=app           --cov-fail-under=80
+# Assim cada domínio tem seu próprio limiar sem o gate global distorcer a soma.
 # =============================================================================
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = [
-    # ACHADO 4 / ADR 0008 — cobertura no esqueleto (F0.4):
-    # Os pacotes app/, fiscal_engine/, workers/ ainda não existem.
-    # Usar --cov=<pacote> agora causaria "module not found" ou
-    # "no data collected", quebrando o pipeline sem motivo.
-    #
-    # Os limiares em [tool.coverage.report] ficam CONFIGURADOS e DOCUMENTADOS
-    # mas sem dentes até existir código (ADR 0008 §Consequências):
-    #   TODO F0.7: adicionar --cov=fiscal_engine --cov-report=xml:coverage.xml
-    #   TODO F1.0: adicionar --cov=app e --cov-fail-under (via [tool.coverage.report])
-    #
-    # NÃO usar --cov=. (mediria tests/ — distorceria a métrica quando o código chegar).
+    # F0.7a — gate do motor fiscal com dentes: mede SOMENTE fiscal_engine
+    # (motor puro), exige ≥ 95% e emite relatório term + XML para o CI.
+    # NÃO usar --cov=. (mediria tests/ — distorceria a métrica).
+    "--cov=fiscal_engine",
+    "--cov-report=term-missing",
+    "--cov-report=xml:coverage.xml",
+    "--cov-fail-under=95",
     "-v",
 ]
 
 # =============================================================================
 # COVERAGE
 # Configurado aqui para que `coverage run`/`coverage report` autônomos já
-# reflitam a política do projeto. Só adquire dentes via pytest-cov (--cov no
-# addopts acima) nas fatias onde o código existir.
+# reflitam a política do projeto. O gate efetivo vem de --cov no addopts acima.
+# `source` permanece com os três pacotes de forma DOCUMENTAL; a medição ATIVA
+# é delimitada por `--cov=fiscal_engine` (os demais ainda não existem).
 # =============================================================================
 [tool.coverage.run]
 branch = true
@@ -187,10 +192,10 @@ omit = [
 ]
 
 [tool.coverage.report]
-# ACHADO 3 (TODO F0.7): consolidar com --cov-fail-under no addopts quando o
-# gate do motor fiscal (≥95%) for ativado. Por ora, gate global ≥ 80%.
-# ACHADO 4 / ADR 0008: cobertura vacuosa no esqueleto da F0.4. Reavaliar em F1.0.
-fail_under = 80
+# ACHADO 3 (RESOLVIDO em F0.7a): `fail_under` foi REMOVIDO daqui. O limiar tem
+# fonte única em `--cov-fail-under=95` (addopts), evitando dois números
+# divergentes. Em F1.0, medir por pacote em passos separados (ver nota no
+# bloco [tool.pytest.ini_options]).
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
