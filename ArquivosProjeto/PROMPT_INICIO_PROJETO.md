@@ -402,4 +402,3 @@ Deploy: https://ebpos-simples-apuracao-rtc.vercel.app
 
 Próximo passo: [descreva o que quer implementar]
 ```
-

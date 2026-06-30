@@ -2,17 +2,17 @@ import { useState } from "react";
 import { TaxRegime, FiscalDocument, CFOP_LABELS } from "./types";
 import { generateReportPDF } from "./utils/pdfGenerator";
 import XmlUploader from "./components/XmlUploader";
-import { 
-  Calculator, 
-  Settings, 
-  FileSpreadsheet, 
-  TrendingUp, 
-  AlertTriangle, 
-  Activity, 
-  Cpu, 
-  Download, 
-  RefreshCw, 
-  HelpCircle, 
+import {
+  Calculator,
+  Settings,
+  FileSpreadsheet,
+  TrendingUp,
+  AlertTriangle,
+  Activity,
+  Cpu,
+  Download,
+  RefreshCw,
+  HelpCircle,
   CheckCircle,
   FileText,
   BadgeAlert,
@@ -30,7 +30,7 @@ export default function App() {
   const [cnpj, setCnpj] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [regime, setRegime] = useState<TaxRegime>("Simples Nacional");
-  
+
   // Tab control
   const [activeTab, setActiveTab] = useState<"visao" | "simulador" | "xml" | "conformidade" | "ai" | "tutorial">("visao");
 
@@ -48,7 +48,7 @@ export default function App() {
   // Custom Brazilian Reform simulations variables
   const [purchasesFromSimplesRatio, setPurchasesFromSimplesRatio] = useState<number>(0);
   const [salesToCompaniesRatio, setSalesToCompaniesRatio] = useState<number>(0);
-  
+
   // Custom option under Reforma: Recolher IBS/CBS "por fora" do Simples
   const [payIbsCbsPorFora, setPayIbsCbsPorFora] = useState<boolean>(false);
 
@@ -61,8 +61,8 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Calculations & Constants (Reforma Tributária LC 214/2025)
-  const ALIQUOTA_PADRAO_IBS = 17.7; 
-  const ALIQUOTA_PADRAO_CBS = 8.8;  
+  const ALIQUOTA_PADRAO_IBS = 17.7;
+  const ALIQUOTA_PADRAO_CBS = 8.8;
   const ALIQUOTA_DUAL_CHEIA = ALIQUOTA_PADRAO_IBS + ALIQUOTA_PADRAO_CBS; // 26.5%
 
   const SIMPLES_CREDIT_RATE_IBS = 3.5;
@@ -99,7 +99,7 @@ export default function App() {
       calculatedDebitsIbs = totalSales * (ALIQUOTA_PADRAO_IBS / 100);
       calculatedDebitsCbs = totalSales * (ALIQUOTA_PADRAO_CBS / 100);
     } else {
-      const factor = regime === "MEI" ? 0.015 : 0.055; 
+      const factor = regime === "MEI" ? 0.015 : 0.055;
       calculatedDebitsIbs = totalSales * (factor * 0.58);
       calculatedDebitsCbs = totalSales * (factor * 0.42);
     }
@@ -170,7 +170,7 @@ export default function App() {
         valCbs: calculatedDebitsCbs,
         count: 1
       };
-      
+
       groups["1102-entrada"] = {
         cfop: "1102",
         label: CFOP_LABELS["1102"] + " (Simulação)",
@@ -194,7 +194,7 @@ export default function App() {
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "ID,Chave,Origem,Destino,Tipo,CFOP,Fluxo,Valor Total (R$),IBS (R$),CBS (R$),Descricao\n";
-    
+
     const rows = hasDocs ? documents : [
       {
         id: "Sim_1",
@@ -388,7 +388,7 @@ export default function App() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto p-6 space-y-8">
-        
+
         {/* Dynamic MicroSaaS Global metrics ribbon */}
         <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-[#101526] border border-slate-800/60 p-4 rounded-xl">
@@ -444,8 +444,8 @@ export default function App() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition shrink-0 whitespace-nowrap cursor-pointer ${
-                    isSelected 
-                      ? "border-indigo-500 text-indigo-400 bg-indigo-950/20" 
+                    isSelected
+                      ? "border-indigo-500 text-indigo-400 bg-indigo-950/20"
                       : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-800"
                   }`}
                 >
@@ -463,7 +463,7 @@ export default function App() {
         {/* Tab Contents with AnimatePresence */}
         <div className="min-h-[400px]">
           <AnimatePresence mode="wait">
-            
+
             {/* Traw 1: Visão Geral */}
             {activeTab === "visao" && (
               <motion.div
@@ -482,7 +482,7 @@ export default function App() {
                         <Settings className="w-4.5 h-4.5 text-indigo-400" />
                         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Diagnóstico Cadastral</h3>
                       </div>
-                      
+
                       <div className="space-y-3">
                         <div>
                           <label className="text-[10px] text-slate-400 font-medium font-mono">RAZÃO SOCIAL</label>
@@ -625,13 +625,13 @@ export default function App() {
                           <span className="text-slate-400">Índice: {currentRevenue > 0 ? ((totalCredits / (totalDebits || 1)) * 100).toFixed(1) : "0.0"}% de compensação</span>
                         </div>
                         <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden flex">
-                          <div 
-                            className="bg-indigo-500 h-full transition-all" 
-                            style={{ width: `${Math.max(5, Math.min(95, (totalDebits / ((totalDebits + totalCredits) || 1)) * 100))}%` }} 
+                          <div
+                            className="bg-indigo-500 h-full transition-all"
+                            style={{ width: `${Math.max(5, Math.min(95, (totalDebits / ((totalDebits + totalCredits) || 1)) * 100))}%` }}
                           />
-                          <div 
-                            className="bg-emerald-500 h-full transition-all" 
-                            style={{ width: `${Math.max(5, Math.min(95, (totalCredits / ((totalDebits + totalCredits) || 1)) * 100))}%` }} 
+                          <div
+                            className="bg-emerald-500 h-full transition-all"
+                            style={{ width: `${Math.max(5, Math.min(95, (totalCredits / ((totalDebits + totalCredits) || 1)) * 100))}%` }}
                           />
                         </div>
                         <div className="flex justify-between text-[9px] text-slate-500 font-sans">
@@ -705,8 +705,8 @@ export default function App() {
                           <tr key={`${group.cfop}-${group.direction}`} className="hover:bg-slate-900/30 transition">
                             <td className="py-3 px-3 font-mono font-bold text-slate-100">
                               <span className={`px-2 py-0.5 rounded text-[11px] ${
-                                group.direction === "entrada" 
-                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/20" 
+                                group.direction === "entrada"
+                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-500/20"
                                   : "bg-blue-950/60 text-blue-400 border border-blue-500/20"
                               }`}>
                                 {group.cfop}
@@ -927,9 +927,9 @@ export default function App() {
                 transition={{ duration: 0.2 }}
                 className="bg-[#10162a]/95 border border-slate-800/80 p-6 rounded-2xl"
               >
-                <XmlUploader 
-                  documents={documents} 
-                  onDocumentsChange={setDocuments} 
+                <XmlUploader
+                  documents={documents}
+                  onDocumentsChange={setDocuments}
                   myCnpj={cnpj}
                 />
               </motion.div>
@@ -969,7 +969,7 @@ export default function App() {
                         <AlertTriangle className="w-4 h-4 text-amber-500" />
                         Notas Fiscais Avaliadas com Alíquota Omitida
                       </p>
-                      
+
                       {nonCompliantDocs.length === 0 ? (
                         <div className="p-6 border border-dashed border-slate-800 rounded-lg text-center space-y-1 bg-slate-900/15">
                           <CheckCircle className="w-6 h-6 text-emerald-500 mx-auto" />
@@ -979,8 +979,8 @@ export default function App() {
                       ) : (
                         <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                           {nonCompliantDocs.map((doc, idx) => (
-                            <div 
-                              key={doc.id || idx} 
+                            <div
+                              key={doc.id || idx}
                               className="p-2.5 text-[11px] bg-slate-950/40 border border-slate-800 hover:border-indigo-500/40 rounded-lg flex justify-between items-center transition gap-2"
                             >
                               <div className="space-y-0.5 truncate">
@@ -1014,7 +1014,7 @@ export default function App() {
                       <div className="space-y-3 font-sans">
                         <div>
                           <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nome / Razão Social do Fornecedor</label>
-                          <input 
+                          <input
                             type="text"
                             value={supplierName}
                             onChange={(e) => setSupplierName(e.target.value)}
@@ -1026,7 +1026,7 @@ export default function App() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">CNPJ do Fornecedor</label>
-                            <input 
+                            <input
                               type="text"
                               value={supplierCnpj}
                               onChange={(e) => setSupplierCnpj(e.target.value)}
@@ -1036,7 +1036,7 @@ export default function App() {
                           </div>
                           <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">E-mail do Fornecedor</label>
-                            <input 
+                            <input
                               type="email"
                               value={supplierEmail}
                               onChange={(e) => setSupplierEmail(e.target.value)}
@@ -1049,7 +1049,7 @@ export default function App() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Chave de Acesso / Nota</label>
-                            <input 
+                            <input
                               type="text"
                               value={supplierDocKey}
                               onChange={(e) => setSupplierDocKey(e.target.value)}
@@ -1059,7 +1059,7 @@ export default function App() {
                           </div>
                           <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Total (R$)</label>
-                            <input 
+                            <input
                               type="text"
                               value={supplierDocValue}
                               onChange={(e) => setSupplierDocValue(e.target.value)}

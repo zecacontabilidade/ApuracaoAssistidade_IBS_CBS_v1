@@ -176,4 +176,3 @@
 | ADR-10 | xlsx write-only (não migrar) | ExcelJS | CVE não afeta uso de escrita; migração sem benefício |
 | ADR-11 | @fontsource | next/font/google, CDN | next/font falha em ambientes sem internet |
 | ADR-12 | Supabase Auth | Clerk, Auth.js | Free Tier; controle total; Sign Up desabilitável |
-

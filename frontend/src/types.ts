@@ -39,7 +39,7 @@ export const CFOP_LABELS: Record<string, string> = {
   "1352": "Aquisição de serviço de transporte p/ industrialização",
   "2352": "Aquisição de faturamento de frete/transporte p/ indústria",
   "1403": "Compra de mercadoria com Substituição Tributária",
-  
+
   // Saídas (5xxx e 6xxx)
   "5101": "Venda de produção do estabelecimento (Estado)",
   "6101": "Venda de produção do estabelecimento (Outro Estado)",
@@ -59,4 +59,3 @@ export interface CfopGroupTotals {
   valCbs: number;
   count: number;
 }
-

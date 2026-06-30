@@ -159,4 +159,3 @@ Para melhorar o dossiê: refinar as instruções de cada seção ou adicionar no
 | `gemini-2.5-flash-lite` | ✅ | Mais rápido para testes |
 
 **Não usar:** `gemini-2.0-flash` (desligado jun/2026), `gemini-1.5-flash` (legado).
-

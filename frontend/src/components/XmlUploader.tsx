@@ -131,7 +131,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
   const parseXmlString = (xmlText: string, filename: string): FiscalDocument => {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-    
+
     // Check for parse error
     const parserError = xmlDoc.getElementsByTagName("parsererror");
     if (parserError.length > 0) {
@@ -144,11 +144,11 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
     let emitCnpj = xmlDoc.getElementsByTagName("emit")[0]?.getElementsByTagName("CNPJ")[0]?.textContent || "00.000.000/0001-00";
     let destCnpj = xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CNPJ")[0]?.textContent ||
                   xmlDoc.getElementsByTagName("dest")[0]?.getElementsByTagName("CPF")[0]?.textContent || "";
-    
+
     // Key/Chave
     let infProt = xmlDoc.getElementsByTagName("infProt")[0];
-    let key = infProt?.getElementsByTagName("chNFe")[0]?.textContent || 
-              xmlDoc.getElementsByTagName("infNFe")[0]?.getAttribute("Id")?.replace("NFe", "") || 
+    let key = infProt?.getElementsByTagName("chNFe")[0]?.textContent ||
+              xmlDoc.getElementsByTagName("infNFe")[0]?.getAttribute("Id")?.replace("NFe", "") ||
               Math.random().toString().substring(2, 46);
 
     // Total value
@@ -447,7 +447,7 @@ export default function XmlUploader({ documents, onDocumentsChange, myCnpj }: Xm
           {/* Manual Entry Form */}
           <form onSubmit={addManualDocument} className="bg-slate-900/60 p-4 border border-slate-800 rounded-xl space-y-3">
             <h3 className="text-xs font-semibold uppercase text-slate-400 tracking-wider">Lançamento Rápido</h3>
-            
+
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] text-slate-400 font-medium">Segmento</label>

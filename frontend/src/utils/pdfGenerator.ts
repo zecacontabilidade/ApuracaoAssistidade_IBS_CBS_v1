@@ -74,7 +74,7 @@ export function generateReportPDF(params: ExportPdfParams) {
     // Bottom decorative footer
     doc.setFillColor(241, 245, 249); // Slate-100
     doc.rect(margin, pageHeight - 12, contentWidth, 0.2, "F");
-    
+
     doc.setTextColor(148, 163, 184);
     doc.setFontSize(7);
     doc.text(
@@ -197,11 +197,11 @@ export function generateReportPDF(params: ExportPdfParams) {
   doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
   doc.text("1. Resumo Geral de Apuração (IBS + CBS)", margin, y);
-  
+
   // Underline
   doc.setFillColor(79, 70, 229);
   doc.rect(margin, y + 1.5, 65, 0.6, "F");
-  
+
   y += 6;
 
   // Table header
@@ -230,7 +230,7 @@ export function generateReportPDF(params: ExportPdfParams) {
       doc.setFont("Helvetica", "normal");
       doc.setTextColor(51, 65, 85);
     }
-    
+
     // borders
     doc.setDrawColor(241, 245, 249);
     doc.line(margin, y + (isTotal ? 7.5 : 7), margin + contentWidth, y + (isTotal ? 7.5 : 7));
@@ -251,12 +251,12 @@ export function generateReportPDF(params: ExportPdfParams) {
   const netIbs = calculatedDebitsIbs - calculatedCreditsIbs;
   const netCbs = calculatedDebitsCbs - calculatedCreditsCbs;
   const netTotal = netIbs + netCbs;
-  
+
   drawRow(
-    "IMPOSTO NET APURADO (Competência Corrente)", 
-    currentRevenue - currentCost, 
-    netIbs, 
-    netCbs, 
+    "IMPOSTO NET APURADO (Competência Corrente)",
+    currentRevenue - currentCost,
+    netIbs,
+    netCbs,
     true
   );
 
@@ -272,14 +272,14 @@ export function generateReportPDF(params: ExportPdfParams) {
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
   doc.text("IMPOSTO DEVIDO COMBINADO (IBS + CBS):", margin + 6, y + 6);
-  
+
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(14);
   const isCredito = netTotal < 0;
   doc.setTextColor(isCredito ? 16 : 79, isCredito ? 185 : 70, isCredito ? 129 : 229); // blue vs green
   doc.text(
-    `R$ ${formatBRL(Math.abs(netTotal))} ${isCredito ? " (SALDO CREDOR)" : " (A RECOLHER)"}`, 
-    margin + 6, 
+    `R$ ${formatBRL(Math.abs(netTotal))} ${isCredito ? " (SALDO CREDOR)" : " (A RECOLHER)"}`,
+    margin + 6,
     y + 13
   );
 
@@ -454,7 +454,7 @@ export function generateReportPDF(params: ExportPdfParams) {
 
     // We process the markdown paragraphs from Gemini to fit well in the PDF
     const paragraphs = aiAnalysis.split("\n\n");
-    
+
     paragraphs.forEach((para) => {
       let textLine = para.trim();
       if (!textLine) return;
@@ -498,7 +498,7 @@ export function generateReportPDF(params: ExportPdfParams) {
 
       // Split words gracefully
       const wrappedLines = doc.splitTextToSize(textLine, contentWidth - (isBullet ? 8 : 0));
-      
+
       wrappedLines.forEach((line: string, idx: number) => {
         checkNewPage(4.5);
         if (isBullet && idx === 0) {
@@ -506,7 +506,7 @@ export function generateReportPDF(params: ExportPdfParams) {
           doc.setFont("Helvetica", "bold");
           doc.setTextColor(79, 70, 229);
           doc.text("•", margin + 2, y + 3);
-          
+
           doc.setFont("Helvetica", fontStyle);
           doc.setTextColor(51, 65, 85);
           doc.text(line, margin + 6, y + 3);

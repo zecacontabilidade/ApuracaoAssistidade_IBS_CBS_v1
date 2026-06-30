@@ -39,7 +39,7 @@ O CFOP 5.102 não muda. A posição relativa ao CNPJ analisado é que define o i
 O CFOP serve apenas para **excluir da análise de conformidade** as operações que, por sua natureza, não geram obrigação de destaque de IBS/CBS:
 
 - Remessas para conserto/reparo (5.915)
-- Brindes e amostras (5.910, 5.911)  
+- Brindes e amostras (5.910, 5.911)
 - Remessas para industrialização por conta de terceiros (5.901)
 - Exportações (7.xxx) — imunes
 
@@ -281,7 +281,7 @@ NFS-e no padrão ABRASF antigo → **fora do escopo**. Se o sistema detectar um 
 NFSe (namespace: http://www.sped.fazenda.gov.br/nfse, versao="1.00")
 └── infNFSe [Id="NFSe{chave}"]
     ├── nNFSe           → número sequencial da nota
-    ├── cLocEmi         → IBGE code do município emissor  
+    ├── cLocEmi         → IBGE code do município emissor
     ├── dhEmi           → data/hora emissão
     ├── tpEmit          → 1=PJ, 2=PF, 3=Ente Público
     └── DPS             → Documento de Prestação de Serviço
@@ -502,4 +502,3 @@ interface DocumentTotals {
 | CFOP | Por item (4 dígitos) | Por item (5.xxx) | Nível doc | Código NBS |
 | NCM | Por item (8 dígitos) | Por item (8 dígitos) | 'N/A' | Código Mun. |
 | referenced_keys | — | — | infNFe[].chave | — |
-

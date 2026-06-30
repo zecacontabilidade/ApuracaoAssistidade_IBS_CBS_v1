@@ -280,4 +280,3 @@ A ferramenta deve deixar claro na UI quais premissas estão sendo assumidas:
 6. **CT-e e crédito de frete**: Todo IBS/CBS destacado em CT-e com direção INBOUND é considerado crédito. A regra de CIF/FOB não é verificada automaticamente.
 
 7. **Alíquotas de transição**: Durante 2026-2032, as alíquotas de IBS/CBS nos XMLs são as alíquotas de transição, não as definitivas. A ferramenta usa os valores efetivamente destacados no XML.
-

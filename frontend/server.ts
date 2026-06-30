@@ -37,7 +37,7 @@ async function startServer() {
   app.post("/api/analyze", async (req, res) => {
     try {
       const { regime, totalPurchases, totalSales, documents, purchasesFromSimplesCount, salesToCompaniesCount } = req.body;
-      
+
       // Privacy Guard: ensure no sensitive keys, CNPJs, or company names are present in metadata sent to AI.
       // We explicitly filter and clean documents context before compiling the prompt.
       const cleanedDocuments = (documents || []).map((doc: any, idx: number) => ({

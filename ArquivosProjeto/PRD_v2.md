@@ -148,4 +148,3 @@ Quando o produto evoluir para uma versão comercial, a arquitetura local se torn
 | Usuário tentar carregar XMLs não-fiscais no ZIP | Alta | Baixo | DocumentDetector retorna UNKNOWN + log amigável |
 | Performance com ZIPs de 1000+ XMLs | Média | Médio | Processamento assíncrono em lotes; já usa async/await |
 | Regras de crédito IBS/CBS ainda em regulamentação | Alta | Alto | Deixar regras configuráveis; documentar premissas assumidas |
-

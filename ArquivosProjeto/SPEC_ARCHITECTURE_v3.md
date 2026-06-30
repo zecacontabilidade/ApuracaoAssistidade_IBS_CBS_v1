@@ -490,4 +490,3 @@ npm run dev                   # http://localhost:3000
 3. Authentication → Providers → Email → desabilitar "Enable Sign Up"
 4. Authentication → Users → Add user (criar usuário manualmente)
 5. Settings → API → copiar Project URL e anon key → adicionar no Vercel
-

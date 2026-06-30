@@ -164,4 +164,3 @@ Profissionais de contabilidade e escritórios tributários precisam de uma ferra
 | Tempo de geração do dossiê | < 3 minutos |
 | Precisão dos índices IBS/CBS | 100% (validado por testes) |
 | Satisfação do usuário beta | NPS > 50 |
-
