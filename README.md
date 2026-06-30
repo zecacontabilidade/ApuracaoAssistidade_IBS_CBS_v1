@@ -83,6 +83,40 @@ pre-commit run --all-files  # Lint/format/type-check antes de commits
 Ele depende de `pip install -e "backend[dev,test]"` já estar feito (tools: ruff, mypy, etc.).
 Se clonar o repo afresh, rode `pip install -e "backend[dev,test]"` **antes** de `pre-commit run`.
 
+## Qualidade do frontend
+
+Todos os comandos abaixo rodam **de dentro do container** e com `cwd = /workspace/frontend`
+(ver F0.5):
+
+```bash
+# Prerequisito: npm install (feito automaticamente no post-create.sh)
+# Este comando DEVE rodar antes de qualquer ferramenta (eslint, prettier, tsc, vitest).
+
+cd /workspace/frontend
+
+# Lint + formatação
+npm run lint           # ESLint com regras strict para código novo, warns para legado
+npm run lint:fix       # Corrige issues de lint automaticamente
+npm run format         # Prettier (printWidth 100, singleQuote false, semi, trailing comma)
+npm run format:check   # Verifica se o código está formatado
+
+# Type-check (strict)
+npm run typecheck      # tsc --noEmit com strict mode ativo
+
+# Testes + cobertura
+npm run test           # Vitest (modo run — executa uma vez)
+npm run test:watch     # Vitest (modo watch — executa ao salvar)
+npm run test:coverage  # Com relatório de cobertura (≥70% threshold)
+
+# Git hooks (roda de /workspace, não /workspace/frontend)
+cd /workspace
+pre-commit run --all-files  # ESLint + Prettier check antes de commits
+```
+
+**Nota importante:** o `pre-commit install` foi executado no post-create.sh.
+Ele depende de `npm install` já estar feito no `frontend/` (hooks usam `frontend/node_modules/.bin`).
+Se clonar o repo afresh, rode `npm install --prefix frontend` **antes** de `pre-commit run`.
+
 ## Documentação
 - [ADRs](docs/adr/) — decisões de arquitetura
 - [Contrato de API](docs/api/contrato-api-v1.md)

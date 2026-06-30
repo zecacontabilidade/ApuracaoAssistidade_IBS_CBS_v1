@@ -75,3 +75,40 @@ repos:
         types: [python]
         files: ^backend/
         pass_filenames: false
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Frontend — ESLint + Prettier (F0.5)
+  #
+  # Decisão de design (espelha o padrão ruff/mypy da F0.4):
+  #   - repo: local, language: system → usa os binários instalados em
+  #     frontend/node_modules/.bin via npm install.
+  #   - ESLint: pass_filenames: false — roda `eslint .` no diretório
+  #     frontend/ para evitar problemas de path relativo com o flat config.
+  #   - Prettier: pass_filenames: false — roda `prettier --check .` para
+  #     verificar formatação; o dev roda `npm run format` para corrigir.
+  #   - Pré-requisito: `npm install` dentro de frontend/ (feito pelo
+  #     post-create.sh do devcontainer).
+  #
+  # TODO(F0.6): No CI, adicionar step `npm ci --prefix frontend` antes do
+  # pre-commit para garantir que node_modules esteja populado.
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: eslint-frontend
+        name: eslint (frontend)
+        language: system
+        entry: bash -c 'cd frontend && node_modules/.bin/eslint .'
+        # Passa qualquer arquivo frontend alterado para disparar o hook;
+        # o eslint checa o projeto inteiro (pass_filenames: false) para
+        # garantir contexto completo do flat config.
+        files: ^frontend/
+        types_or: [ts, tsx, javascript, jsx]
+        pass_filenames: false
+
+      - id: prettier-frontend
+        name: prettier check (frontend)
+        language: system
+        entry: bash -c 'cd frontend && node_modules/.bin/prettier --check .'
+        files: ^frontend/
+        types_or: [ts, tsx, javascript, jsx, json, css, markdown]
+        pass_filenames: false

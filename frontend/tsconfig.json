@@ -4,11 +4,7 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "isolatedModules": true,
@@ -16,11 +12,22 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+
+    // ── Strict mode (F0.5) ────────────────────────────────────────────────────
+    // Enabled: strict (noImplicitAny, strictNullChecks, strictFunctionTypes, …)
+    // plus structural quality flags.
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Unused-variable enforcement — fully enabled (Opção B, F0.5).
+    // Dead imports/params in the 3 legacy files were cleaned up mechanically.
+    // TODO(F1.9): After monolith removal, verify no regressions here.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   }
 }
