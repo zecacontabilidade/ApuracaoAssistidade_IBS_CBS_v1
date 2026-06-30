@@ -24,3 +24,7 @@ venv/
 .claude/agents/
 .claude/skills/
 ArquivosProjeto/PROMPT_CLAUDE_CODE_Time_de_Agentes.md
+
+# Avaliacao tecnica interna marcada "Confidencial" — mantida apenas LOCAL, removida da historia
+# e fora do repo publico (purgada via git filter-branch). Nao re-adicionar ao versionamento.
+ArquivosProjeto/Avaliacao_Tecnica_Simples_Apuracao_RTC.docx
