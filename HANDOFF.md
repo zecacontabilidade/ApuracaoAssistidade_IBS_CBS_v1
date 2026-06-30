@@ -11,8 +11,8 @@
 
 ## 🔒 Regras de Git (obrigatórias)
 - **Branch única `develop`. NUNCA commitar/empurrar na `main`.**
-- **NÃO fazer push enquanto o repo for público.** `origin = zecacontabilidade/ApuracaoAssistidade_IBS_CBS_v1` está **público** e contém doc "Confidencial"; a conta `matheusfurtado` tem **WRITE, não admin**. Aguardando o dono tornar privado (UI) ou criar repo privado novo. Hoje há **8 commits locais à frente de `origin/main`, nada empurrado**.
-- **Local-only (gitignored), não versionar:** `.claude/agents/`, `.claude/skills/`, `ArquivosProjeto/PROMPT_CLAUDE_CODE_Time_de_Agentes.md`. Só `.claude/settings.json` é versionado.
+- **Push de `develop` autorizado (auditado); dados confidenciais purgados.** `origin/develop` existe e é rastreada (push autorizado em auditoria de credenciais). A doc interna "Confidencial" (`ArquivosProjeto/Avaliacao_Tecnica_Simples_Apuracao_RTC.docx`) foi **purgada da história git** (via `git filter-branch`) e do object store, agora é gitignored e local-only — NÃO está no repo público. Policy: empurre `develop` após rodar auditoria de credenciais (não há segredos expostos); **NUNCA `main`**.
+- **Local-only (gitignored), não versionar:** `.claude/agents/`, `.claude/skills/`, `ArquivosProjeto/` (histórico purgado, confidencial local). Só `.claude/settings.json` é versionado.
 - **Sem commit/push sem aprovação humana explícita** (skill `portao-de-commit`).
 
 ## ✅ Status atual (branch `develop`, commits LOCAIS — nada empurrado)
@@ -28,6 +28,8 @@
 **F0.0/F0.1/F0.2/F0.3 — DONE** (ver histórico abaixo).
 
 **F0.4 (tooling de qualidade backend) — DONE; 2 commits.** `backend/pyproject.toml` (PEP 621: deps migradas de requirements.txt → fonte única; extras `dev`/`test`); Ruff (lint+format, line-length 100); mypy `strict` (+plugins `pydantic.mypy`/`sqlalchemy.ext.mypy.plugin`); pytest + coverage; `.pre-commit-config.yaml` na raiz (higiene + ruff + mypy escopado a `backend/`); `post-create.sh` faz `pip install -e` + `pre-commit install`; `requirements.txt` virou shim documental; `backend/__init__.py` **removido** (ADR 0008). **ADR 0008** fixou o layout (Opção B). Gates: pirâmide verde (3 smoke tests; gate de cobertura `fail_under=80` **configurado e com dentes** — `pytest --cov=app --cov=fiscal_engine` falha em 0%, mas dormente no esqueleto pois `addopts` não tem `--cov` ainda); revisao-final (revisor-codigo SEM Críticos + arquiteto-lider ACEITE); LGPD/AWS N/A. Cobertura **vacuosa** no esqueleto por design (sem código de produto) — ativa quando os pacotes existirem.
+
+**F0.5 (tooling de qualidade frontend) — DONE.** `frontend/eslint.config.js` (flat ESLint 9: typescript-eslint + react + hooks + refresh + prettier-config, Opção B strict by default com `legacyOverrides` para 3 arquivos legado); `frontend/.prettierrc.json` (printWidth 100, lf); `frontend/tsconfig.json` (`strict: true` + `noUnusedLocals/Parameters: true`); `frontend/vite.config.ts` (Vitest v8, threshold ≥70%, estratégia dormente espelhando F0.4); `frontend/package.json` (scripts lint/format/typecheck/test + deps faltantes `@types/react*`); `.pre-commit-config.yaml` estendido com hooks eslint+prettier (language: system, escopados a `frontend/`, dependem de `npm install`). README atualizado (seção "Qualidade do frontend"). Gates: pirâmide verde (lint/format/type/test rodam no container); revisao-final (revisor-codigo + arquiteto-lider ACEITE Opção B — strict novo, warns legado); LGPD/AWS N/A.
 
 ### Histórico resumido F0.0–F0.3
 **F0.0** devcontainer validado (db/redis/minio/app/worker healthy). **F0.1** fundação (ADRs 0001–0007, contrato API, data-model, backlog). **F0.2** reorg monorepo (`frontend/` + `backend/` skeleton). **F0.3** remoção de mocks/identidade AI Studio + specs legado marcados (Vitest 4/4).
@@ -50,10 +52,13 @@
 - Retenção do XML bruto + cifragem de CPF + base legal LGPD — F1.x/F2 (com `oficial-lgpd`).
 
 ## 🧹 Dívidas técnicas / pendências de código
+**Novas da F0.5 (registradas em tooling frontend):**
+- **F1.9 (limpeza do legado frontend):** deletar o bloco `legacyOverrides` inteiro do `eslint.config.js` (linhas 88–103), promover os `warn` do legado a `error` globalmente, remover os excludes de DIRETÓRIO (`src/components/**`, `src/utils/**`) do `vite.config.ts` e verificar ≥70% em todo `src/**`. **Critério de aceite:** todos os arquivos novos cobertos ou explicitamente ignorados por arquivo específico.
+
 **Novas da F0.4 (registradas na revisão):**
 - **Gate de cobertura por pacote:** ativar `--cov=fiscal_engine --cov-fail-under=95` em **F0.7** e `--cov=app` (≥80%) em **F1.0**; um único `--cov-fail-under` não expressa limiares por domínio. Os limiares já estão documentados no `pyproject.toml`.
 - **Consolidar `fail_under` duplicado** (`[tool.coverage.report]` vs futuro `--cov-fail-under` no addopts) numa fonte só quando o gate do motor for ativado — **F0.7** (ACHADO 3).
-- **CI (F0.6):** materializar a fronteira do engine com **import-linter** (referenciando `fiscal_engine`/`app`, ADR 0008) e fixar `working-directory: backend` nos jobs; garantir step de `pip install -e "backend[dev,test]"` ANTES de `pre-commit`/ruff/mypy (hooks `language: system`).
+- **CI (F0.6):** (a) adicionar step `npm ci --prefix frontend` (modo lockfile) ANTES do pre-commit para garantir node_modules no CI; (b) **decidir escopo de typecheck:** hoje só eslint+prettier estão no pre-commit do front, não tsc (assimetria vs mypy do backend) — F0.6 valida se entra no pre-commit ou fica só no CI; (c) **ACHADO de revisão (F0.5):** os excludes de cobertura são por DIRETÓRIO (`src/components/**`, `src/utils/**`) — código novo de F1.x que caia em `components/` fica silenciosamente fora; trocar por arquivos específicos (`src/components/XmlUploader.tsx`, `src/utils/pdfGenerator.ts`) em **F0.6**; materializar a fronteira do engine com **import-linter** (referenciando `fiscal_engine`/`app`, ADR 0008) e fixar `working-directory: backend` nos jobs; garantir step de `pip install -e "backend[dev,test]"` ANTES de `pre-commit`/ruff/mypy (hooks `language: system`).
 - **Auto-referência do extra `dev`** → `simples-apuracao-rtc-backend[test]` por nome de distribuição; se o `name` mudar, atualizar nos dois lugares (baixo impacto).
 
 **Herdadas (frontend/IA — F1.x):**
@@ -61,18 +66,18 @@
 - `@google/genai` ainda em `frontend/package.json` (só no `server.ts` legado) — remover/realocar na **F1.9/F1.10**.
 - **Lógica fiscal ainda no cliente** (`App.tsx`/`XmlUploader.tsx` fazem parsing/cálculo no browser). Migrar para o motor Python puro — **F0.7/F1.5+** (dívida arquitetural principal).
 - `COMPILADO_EXEMPLOS` (DEMO sintético em `XmlUploader.tsx`) → substituir por amostras via API na **F1.9**; bug conhecido: campos `emit_name`/`dest_name` não batem com o consumo (`emitente`/`destinatario`) → coluna origem/destino renderiza `undefined`; normalizar na **F1.9**.
-- **F0.5** estende o tooling FRONTEND (ESLint, Prettier, `tsc` strict, Vitest com threshold ≥70%) sobre a base Vitest mínima da F0.3 — **não re-adicionar**.
 - `frontend/metadata.json` é artefato do AI Studio; considerar remover em higiene futura.
 
 ## ▶️ PRÓXIMOS PASSOS (uma fatia por vez, pelos gates)
 Fluxo por fatia: `/iniciar-fatia` → especialista implementa → `/piramide-de-testes` → `/revisao-lgpd` (se tocar dados) → `/revisao-final` (revisor-codigo + arquiteto-lider) → `/portao-de-commit` (PARA p/ aprovação). Cobertura: motor ≥95%, demais ≥80%, front ≥70%.
 
-**Próxima: F0.5 — Tooling de qualidade frontend** · dono **engenheiro-frontend** · P
-   - ESLint, Prettier, `tsc` strict, Vitest + coverage (≥70%) sobre a base Vitest mínima da F0.3.
-   - DoD: lint/type/test rodam no container; Vitest de exemplo verde; threshold de cobertura configurado.
-   - Pode correr em paralelo à F0.4 (já feita); independe do backend.
+**Próxima: F0.6 — CI (GitHub Actions)** · dono **devops-finops** · M
+   - Pipeline lint+type+test+build (backend e frontend), cache, import-linter (fronteira do engine), gates de cobertura.
+   - Tarefas críticas: (a) `npm ci --prefix frontend` antes do pre-commit (diferente de `npm install`); (b) decidir se `tsc --noEmit` entra no pre-commit ou só no CI; (c) revisar excludes de cobertura — hoje são diretórios (`src/components/**`, `src/utils/**`), trocar por arquivos específicos legados (`src/components/XmlUploader.tsx`, `src/utils/pdfGenerator.ts`).
+   - DoD: CI verde em PR; pipeline bloqueia merge com teste vermelho/cobertura baixa; `working-directory: backend` nos jobs; import-linter materializado.
+   - Depende de: F0.4 + F0.5 (ambas feitas).
 
-**Sequência depois:** F0.6 (CI GitHub Actions — depende de F0.4+F0.5; lembrar import-linter + `working-directory: backend` + install antes do pre-commit) → **F0.7 (motor de apuração puro — engenheiro-motor-fiscal, alto valor; cria `backend/fiscal_engine/` e ativa o gate ≥95%)** → **Fase 1** (F1.0 scaffold FastAPI cria `backend/app/`; F1.1 dados+Alembic+RLS; F1.2–1.4 auth/RBAC; F1.5 parsers XML anti-XXE; F1.6–1.7 ingestão+apuração; F1.8 IA Gemini server-side; F1.9 frontend consumindo a API; F1.10 segredos). Backlog completo em `docs/backlog-fatias.md`.
+**Sequência depois:** **F0.7 (motor de apuração puro — engenheiro-motor-fiscal, alto valor; cria `backend/fiscal_engine/` e ativa o gate ≥95%)** → **Fase 1** (F1.0 scaffold FastAPI cria `backend/app/`; F1.1 dados+Alembic+RLS; F1.2–1.4 auth/RBAC; F1.5 parsers XML anti-XXE; F1.6–1.7 ingestão+apuração; F1.8 IA Gemini server-side; F1.9 frontend consumindo a API; F1.10 segredos). Backlog completo em `docs/backlog-fatias.md`.
 
 ## 📌 Fontes de verdade
 `CLAUDE.md` (regras) · `docs/backlog-fatias.md` · `docs/data-model.md` · `docs/api/contrato-api-v1.md` · `docs/adr/*` (0001–0008) · `docs/devcontainer-assessment.md`. Specs em `ArquivosProjeto/*.md` têm partes **LEGADO** (Next.js/Supabase/cálculo no browser) — marcadas na F0.3; vale a stack de `CLAUDE.md` + diagnóstico.
