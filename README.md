@@ -51,6 +51,38 @@ Serviços disponíveis no devcontainer:
 | MinIO API | http://localhost:9000 |
 | MinIO Console | http://localhost:9001 (minioadmin / minioadmin) |
 
+## Qualidade do backend
+
+Todos os comandos abaixo rodam **de dentro do container** e com `cwd = /workspace/backend`
+(ver [ADR 0008](docs/adr/0008-layout-de-pacote-e-cwd-de-tooling-do-backend.md)):
+
+```bash
+# Prerequisito: pip install -e "backend[dev,test]" (feito automaticamente no post-create.sh)
+# Este comando DEVE rodar antes de qualquer ferramenta (ruff, mypy, pytest, pre-commit).
+
+cd /workspace/backend
+
+# Lint + formatação
+ruff check .           # Detecta issues de estilo/segurança
+ruff format .          # Formata código (line-length=100)
+
+# Type-check (strict)
+mypy .                 # Verifica tipos com Pydantic + SQLAlchemy plugins
+
+# Testes + cobertura
+pytest                 # Executa suite (motor ≥95%, demais ≥80% — F0.7+)
+pytest --cov           # Com relatório de cobertura
+pytest --cov --cov-report=html  # Gera HTML em htmlcov/
+
+# Git hooks (roda de /workspace, não /workspace/backend)
+cd /workspace
+pre-commit run --all-files  # Lint/format/type-check antes de commits
+```
+
+**Nota importante:** o `pre-commit install` foi executado no post-create.sh.
+Ele depende de `pip install -e "backend[dev,test]"` já estar feito (tools: ruff, mypy, etc.).
+Se clonar o repo afresh, rode `pip install -e "backend[dev,test]"` **antes** de `pre-commit run`.
+
 ## Documentação
 - [ADRs](docs/adr/) — decisões de arquitetura
 - [Contrato de API](docs/api/contrato-api-v1.md)

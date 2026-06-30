@@ -1,0 +1,77 @@
+# pre-commit configuration — Simples Apuração RTC (F0.4)
+#
+# Decisão de design (hooks ruff + mypy):
+#   - Usamos `repo: local` com `language: system` para ruff e mypy em vez dos
+#     repositórios remotos isolados (astral-sh/ruff-pre-commit + mirrors/mypy).
+#   - Motivo: ambos requerem que os plugins pydantic.mypy e
+#     sqlalchemy.ext.mypy.plugin sejam importáveis no mesmo ambiente Python.
+#     Ambientes isolados do pre-commit NÃO herdam o virtualenv/site-packages do
+#     projeto, quebrando os plugins.
+#   - Consequência: ruff e mypy devem estar instalados no ambiente do projeto
+#     (`pip install -e "backend[dev,test]"`) antes de rodar pre-commit.
+#   - Versão única: pyproject.toml é a fonte de verdade para as versões.
+#
+# Instalação inicial (já feita no post-create.sh):
+#   pip install -e "backend[dev,test]"
+#   pre-commit install
+#
+# Executar manualmente em todos os arquivos:
+#   pre-commit run --all-files
+
+default_language_version:
+  python: python3.12
+
+repos:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Higiene geral de arquivos
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Ruff — lint + format (backend Python)
+  # language: system → usa o ruff instalado via pip install -e "backend[dev]"
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: ruff-lint
+        name: ruff lint
+        language: system
+        entry: ruff check --fix
+        types: [python]
+        files: ^backend/
+        pass_filenames: true
+
+      - id: ruff-format
+        name: ruff format
+        language: system
+        entry: ruff format
+        types: [python]
+        files: ^backend/
+        pass_filenames: true
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Mypy — type checking estrito (backend Python)
+  # language: system → usa o mypy instalado via pip install -e "backend[dev]"
+  # com os plugins pydantic.mypy e sqlalchemy.ext.mypy.plugin acessíveis.
+  # ─────────────────────────────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (backend)
+        language: system
+        entry: python -m mypy
+        # Sempre checa o diretório backend/ inteiro; pass_filenames: false
+        # evita passar arquivos individuais (mypy precisa de contexto completo).
+        args: ["--config-file", "backend/pyproject.toml", "backend/"]
+        types: [python]
+        files: ^backend/
+        pass_filenames: false

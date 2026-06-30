@@ -1,0 +1,203 @@
+# =============================================================================
+# Layout decision (ADR 0008 — Opção B, aceita):
+# backend/ é uma PASTA do monorepo, NÃO um pacote Python.
+# Os pacotes Python top-level vivem DENTRO de backend/:
+#   app/            — API FastAPI (criado em F1.0)
+#   fiscal_engine/  — motor IBS/CBS puro (criado em F0.7)
+#   workers/        — tarefas Dramatiq (criado em F1.x)
+#
+# cwd canônico do tooling: /workspace/backend
+#   pytest      →  cd /workspace/backend && pytest
+#   lint/format →  cd /workspace/backend && ruff check .  /  ruff format .
+#   tipos       →  cd /workspace/backend && mypy .
+#   API         →  cd /workspace/backend && uvicorn app.main:app --reload
+#   worker      →  cd /workspace/backend && python -m dramatiq app.tasks
+#
+# Instalação editable (ambas as formas são válidas):
+#   pip install -e "backend[dev,test]"   (de /workspace)
+#   pip install -e ".[dev,test]"          (de /workspace/backend)
+#
+# Opção A (rejeitada): backend/ como pacote top-level, cwd /workspace, com
+# package-dir={"" = ".."} e --cov-config prefixado. Quebrava "cd backend && pytest".
+# Ver ADR 0008 para a decisão completa.
+# =============================================================================
+
+[build-system]
+requires = ["setuptools>=72", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simples-apuracao-rtc-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+description = "Backend do Simples Apuração RTC — API FastAPI + motor fiscal IBS/CBS"
+
+# Dependências de runtime migradas de backend/requirements.txt (F0.4).
+# requirements.txt foi reduzido a um shim para compatibilidade com ferramentas
+# que ainda não leem pyproject.toml (ex.: pip install -r em scripts legados).
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.14",
+    "psycopg[binary,pool]>=3.2",
+    "fastapi-users[sqlalchemy]>=13.0",
+    "argon2-cffi>=23.1",
+    "dramatiq[redis]>=1.17",
+    "redis>=5.0",
+    "lxml>=5.3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "httpx>=0.27",
+]
+dev = [
+    "ruff>=0.9",
+    "mypy>=2.0",
+    "pre-commit>=4.0",
+    # Type stubs — bibliotecas sem py.typed inline
+    "types-lxml>=2024.11",
+    # SQLAlchemy mypy plugin: incluso no pacote base (sqlalchemy.ext.mypy.plugin)
+    # pydantic.mypy plugin: incluso no pydantic base
+    # Extras de teste incluídos para instalar tudo com um único extra [dev]:
+    "simples-apuracao-rtc-backend[test]",
+]
+
+# ---------------------------------------------------------------------------
+# Setuptools — descoberta de pacotes (Opção B / ADR 0008)
+# Sem package-dir trick: descoberta padrão de pacotes dentro de backend/.
+# app/, fiscal_engine/, workers/ ainda não existem (criados em F1.0/F0.7).
+# Install editable funciona como distribuição vazia até lá — aceitável.
+# tests* está em exclude para não vazar para o wheel.
+# ---------------------------------------------------------------------------
+[tool.setuptools.packages.find]
+include = ["app*", "fiscal_engine*", "workers*"]
+exclude = ["tests*"]
+
+# =============================================================================
+# RUFF — lint + format
+# line-length = 100: equilíbrio entre legibilidade e densidade de código.
+# =============================================================================
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes (imports não usados, variáveis não definidas, etc.)
+    "I",    # isort (ordenação de imports)
+    "N",    # pep8-naming (convenções de nomes)
+    "UP",   # pyupgrade (sintaxe moderna Python)
+    "B",    # flake8-bugbear (anti-padrões comuns e bugs sutis)
+    "C4",   # flake8-comprehensions (list/dict/set comprehensions idiomáticas)
+    "SIM",  # flake8-simplify (código mais simples e direto)
+    "PTH",  # flake8-use-pathlib (preferir pathlib sobre os.path)
+    "RUF",  # regras específicas do ruff
+]
+ignore = [
+    # E501 (line-too-long) é gerenciado pelo formatter (ruff format), não pelo linter.
+    "E501",
+]
+
+[tool.ruff.lint.isort]
+# Pacotes de produto que viverão em backend/ (ADR 0008 / Opção B).
+known-first-party = ["app", "fiscal_engine", "workers"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# =============================================================================
+# MYPY — type checking strict
+# =============================================================================
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+
+# Bibliotecas de terceiros sem stubs completos.
+[[tool.mypy.overrides]]
+module = [
+    "dramatiq.*",
+    "alembic.*",
+    "fastapi_users.*",
+    "argon2.*",
+]
+ignore_missing_imports = true
+
+# =============================================================================
+# PYTEST
+#
+# Invocação canônica: cd /workspace/backend && pytest
+# pyproject.toml é o rootdir (/workspace/backend) — coverage auto-descobre este
+# arquivo sem --cov-config. Paths de relatório são relativos a /workspace/backend.
+#
+# Política de cobertura por domínio (gates com dentes quando o código existir):
+#   • fiscal_engine/  ≥ 95%  — ativado em F0.7 (motor fiscal puro)
+#   • app/            ≥ 80%  — ativado em F1.0 (scaffold FastAPI)
+#   • workers/        ≥ 80%  — ativado em F1.x
+#   • frontend        ≥ 70%  — tooling F0.5 (vitest/coverage)
+#
+# ACHADO 3 (F0.4 — TODO F0.7): quando --cov-fail-under for ativado nos addopts
+# abaixo, remover fail_under de [tool.coverage.report] e manter numa única fonte.
+# =============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    # ACHADO 4 / ADR 0008 — cobertura no esqueleto (F0.4):
+    # Os pacotes app/, fiscal_engine/, workers/ ainda não existem.
+    # Usar --cov=<pacote> agora causaria "module not found" ou
+    # "no data collected", quebrando o pipeline sem motivo.
+    #
+    # Os limiares em [tool.coverage.report] ficam CONFIGURADOS e DOCUMENTADOS
+    # mas sem dentes até existir código (ADR 0008 §Consequências):
+    #   TODO F0.7: adicionar --cov=fiscal_engine --cov-report=xml:coverage.xml
+    #   TODO F1.0: adicionar --cov=app e --cov-fail-under (via [tool.coverage.report])
+    #
+    # NÃO usar --cov=. (mediria tests/ — distorceria a métrica quando o código chegar).
+    "-v",
+]
+
+# =============================================================================
+# COVERAGE
+# Configurado aqui para que `coverage run`/`coverage report` autônomos já
+# reflitam a política do projeto. Só adquire dentes via pytest-cov (--cov no
+# addopts acima) nas fatias onde o código existir.
+# =============================================================================
+[tool.coverage.run]
+branch = true
+source = ["app", "fiscal_engine", "workers"]
+omit = [
+    # Exclui testes do denominador — evita distorcer a métrica.
+    "*/tests/*",
+    "*/migrations/*",
+    # ACHADO 7 (limpeza): */.devcontainer/* removido — estava fora de `source`
+    # e nunca tinha efeito (no-op). Migrações e infra de container nunca devem
+    # entrar no gate de cobertura.
+]
+
+[tool.coverage.report]
+# ACHADO 3 (TODO F0.7): consolidar com --cov-fail-under no addopts quando o
+# gate do motor fiscal (≥95%) for ativado. Por ora, gate global ≥ 80%.
+# ACHADO 4 / ADR 0008: cobertura vacuosa no esqueleto da F0.4. Reavaliar em F1.0.
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+    "\\.\\.\\.\\s*$",  # ellipsis stubs
+]

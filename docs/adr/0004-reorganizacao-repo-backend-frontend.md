@@ -3,7 +3,9 @@
 - **Status:** Aceito
 - **Data:** 2026-06-27
 - **Decisores:** arquiteto-lider (com devops-finops)
-- **Relacionados:** `.devcontainer/post-create.sh`, `docs/devcontainer-assessment.md`
+- **Relacionados:** `.devcontainer/post-create.sh`, `docs/devcontainer-assessment.md`,
+  [ADR 0008](0008-layout-de-pacote-e-cwd-de-tooling-do-backend.md) (detalha a convenção de
+  namespace top-level e cwd canônico /workspace/backend)
 
 ## Contexto
 

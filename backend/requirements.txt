@@ -1,26 +1,13 @@
-# Core
-fastapi>=0.115
-uvicorn[standard]>=0.32
-pydantic>=2.9
-pydantic-settings>=2.6
-
-# Database
-sqlalchemy[asyncio]>=2.0
-alembic>=1.14
-psycopg[binary,pool]>=3.2
-
-# Auth (F1.x)
-fastapi-users[sqlalchemy]>=13.0
-argon2-cffi>=23.1
-
-# Queue (F1.x)
-dramatiq[redis]>=1.17
-redis>=5.0
-
-# XML parsing — anti-XXE (F2.x)
-lxml>=5.3
-
-# Dev / test (separar em extras quando houver pyproject.toml — por ora junto)
-pytest>=8.3
-pytest-asyncio>=0.24
-httpx>=0.27
+# SHIM — Este arquivo é mantido apenas para compatibilidade com ferramentas que
+# não leem pyproject.toml diretamente (ex.: scanners de segurança, Dependabot,
+# ambientes que esperam um requirements.txt).
+#
+# FONTE DE VERDADE: backend/pyproject.toml
+#   [project.dependencies]            — dependências de runtime
+#   [project.optional-dependencies]   — extras dev e test
+#
+# Instalação correta (a partir de /workspace):
+#   pip install -e "backend[dev,test]"   ← dev + test + runtime
+#   pip install -e "backend"             ← apenas runtime
+#
+# NÃO edite este arquivo diretamente. Atualize backend/pyproject.toml.
