@@ -12,14 +12,20 @@ logs (RLS, cripto, mascaramento) a partir de F1.5/F1.6. A regra de impacto
 (``classify_rtc_impact``) não recebe identidade alguma — apenas ``direction``,
 ``cfop``, ``v_ibs``, ``v_cbs``.
 
-Símbolos públicos: enums de classificação, modelos de domínio imutáveis e a
-regra de impacto RTC (crédito/débito/neutro).
+Símbolos públicos: enums de classificação/conformidade, modelos de domínio
+imutáveis, a regra de impacto RTC (crédito/débito/neutro), a avaliação de
+conformidade (F0.7b) e a apuração agregada de IBS/CBS (F0.7b).
 """
 
+from fiscal_engine.apuracao import apurar
+from fiscal_engine.conformity import assess_conformity, assess_item
 from fiscal_engine.enums import (
+    Conformity,
+    ConformityReason,
     Direction,
     DocumentPurpose,
     DocumentType,
+    Granularity,
     RtcImpact,
     RtcReason,
     TaxRegime,
@@ -30,19 +36,35 @@ from fiscal_engine.impact import (
     classify_rtc_impact,
     is_excluded_cfop,
 )
-from fiscal_engine.models import FiscalDocument, FiscalItem, RtcClassification
+from fiscal_engine.models import (
+    Apuracao,
+    FiscalDocument,
+    FiscalItem,
+    InconformidadeRef,
+    ItemConformity,
+    RtcClassification,
+)
 
 __all__ = [
     "CFOP_EXCLUDED_PREFIXES",
+    "Apuracao",
+    "Conformity",
+    "ConformityReason",
     "Direction",
     "DocumentPurpose",
     "DocumentType",
     "FiscalDocument",
     "FiscalItem",
+    "Granularity",
+    "InconformidadeRef",
+    "ItemConformity",
     "RtcClassification",
     "RtcImpact",
     "RtcReason",
     "TaxRegime",
+    "apurar",
+    "assess_conformity",
+    "assess_item",
     "classify_item",
     "classify_rtc_impact",
     "is_excluded_cfop",

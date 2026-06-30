@@ -8,9 +8,12 @@ from enum import StrEnum
 import pytest
 
 from fiscal_engine.enums import (
+    Conformity,
+    ConformityReason,
     Direction,
     DocumentPurpose,
     DocumentType,
+    Granularity,
     RtcImpact,
     RtcReason,
     TaxRegime,
@@ -25,12 +28,32 @@ from fiscal_engine.models import FiscalDocument, FiscalItem
         (RtcImpact, {"CREDIT", "DEBIT", "NEUTRAL"}),
         (Direction, {"INBOUND", "OUTBOUND", "UNKNOWN"}),
         (DocumentType, {"NFE", "NFCE", "CTE", "NFSE", "UNKNOWN"}),
-        (TaxRegime, {"RPA", "SIMPLES_NACIONAL", "MEI", "UNKNOWN"}),
+        # F0.7b: TaxRegime ganhou SIMPLES_EXCESSO (excesso de sublimite).
+        (TaxRegime, {"RPA", "SIMPLES_NACIONAL", "SIMPLES_EXCESSO", "MEI", "UNKNOWN"}),
         (DocumentPurpose, {"NORMAL", "COMPLEMENTAR", "AJUSTE", "DEVOLUCAO"}),
         (
             RtcReason,
             {"INBOUND", "OUTBOUND", "EXCLUDED_CFOP", "NO_HIGHLIGHT", "UNKNOWN_DIRECTION"},
         ),
+        # F0.7b: enums de conformidade e granularidade.
+        (Conformity, {"CONFORME", "INCONFORMIDADE", "NAO_AVALIADO"}),
+        (
+            ConformityReason,
+            {
+                "DATA_AUSENTE",
+                "PRE_2026",
+                "DIRECAO_DESCONHECIDA",
+                "NAO_COMERCIAL",
+                "EXPORTACAO_IMUNE",
+                "DESTAQUE_PRESENTE",
+                "REGIME_SIMPLES",
+                "REGIME_MEI",
+                "REGIME_DESCONHECIDO",
+                "RPA_SEM_DESTAQUE",
+                "SIMPLES_EXCESSO_SEM_DESTAQUE",
+            },
+        ),
+        (Granularity, {"MONTHLY", "QUARTERLY"}),
     ],
 )
 def test_enum_tem_membros_exatos(enum_cls: type[StrEnum], expected_names: set[str]) -> None:

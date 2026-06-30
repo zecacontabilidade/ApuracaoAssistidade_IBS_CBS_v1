@@ -1,18 +1,17 @@
 # Catálogo vivo de regras de negócio fiscais — F0.7a+
 
 **Propósito:** Registro dinâmico das regras de negócio que definem a classificação
-de crédito, débito e neutro em IBS/CBS. Este é o documento **revisável por humanos**
-e **validável por SME fiscal** — a fonte única de verdade técnica (a decisão
-arquitetural correspondente vive em ADR 0009).
+de crédito, débito e neutro em IBS/CBS, além de apuração e conformidade. Este é o documento **revisável por humanos**
+e **validável por SME fiscal** — a fonte única de verdade técnica (as decisões
+arquiteturais correspondentes vivem em ADR 0009 [impacto] e ADR 0010 [apuração + conformidade]).
 
 Diferente de um ADR (que registra *decisão* tomada), este catálogo registra
 **as regras em vigor** tal qual implementadas no código. Toda mudança de regra
 exige (i) atualizar a tabela, (ii) validação de SME, (iii) código/testes, (iv)
 ADR adicional se for decisão.
 
-**Aviso de validade:** Este catálogo é corrente para o motor F0.7a. Futuras
-fatias (F0.7b/F1.0/F1.5) podem adicionar regras de conformidade, cálculo de
-saldo, e apuração — não eliminam estas.
+**Aviso de validade:** Este catálogo é corrente para o motor F0.7a (impacto) e F0.7b (apuração + conformidade).
+Futuras fatias (F1.0/F1.5+) podem adicionar regras de taxa, repositório, e endpoints — não eliminam estas.
 
 ---
 
@@ -34,6 +33,23 @@ saldo, e apuração — não eliminam estas.
 | **R12: Transferências 5.15x/6.15x → NEUTRAL (por ora)** | Transferências entre estabelecimentos próprios (5.15x intra-estadual, 6.15x interestadual) geram `NEUTRAL/EXCLUDED_CFOP` até regulamentação sair. | Decisão do humano (F0.7a não tem SME fiscal permanente). Quando regulamentação autorizar, remover `"515"` e `"615"` de `CFOP_EXCLUDED_PREFIXES` e a regra trata como INBOUND/OUTBOUND conforme direção. | PENDENTE-SME (quando regularizar? como?) |
 | **R13: Valores sempre Decimal** | Toda moeda (`v_ibs`, `v_cbs`, `gross_value` em `FiscalItem`/`FiscalDocument`) é `Decimal`, nunca `float`. Operações matemáticas (`v_ibs + v_cbs`, comparação com `0`) usam `Decimal` puro. | Preservação de centavos sem erro de ponto flutuante (requisito universal de sistema fiscal). Legado do frontend usava `float` — corrigido em F0.7a. | TRAVADA |
 | **R14: Validação de valores não-negativos** | `classify_rtc_impact` valida pré-condição: `v_ibs >= 0` e `v_cbs >= 0`. Levanta `ValueError` se violar. | Valores destacados não podem ser negativos; se parser envia negativo, é bug grave. Cria ponto de bloqueio visível. | TRAVADA |
+
+---
+
+## F0.7b — Apuração e Conformidade
+
+| Regra | Enunciado | Fundamento | Status |
+|-------|-----------|-----------|--------|
+| **R15: Saldo IBS e CBS separados** | Creditos, débitos e saldo de IBS e CBS são mantidos **separados**, sem agregação na figura principal. Agregado (Σ IBS + Σ CBS) existe apenas como derivado de exibição e insumo de cálculo de índice, NUNCA como figura de liquidação. | SPEC_BUSINESS_RULES §6; LC 214/2025 (não-cumulatividade distinta por tributo). Caso 3 da especificação: saldo agregado erroneamente positivo mascara déficit em tributo específico. | TRAVADA |
+| **R16: Índices com base v_bc e divisão-zero → None** | Índices (idx_credito_entradas, idx_debito_saidas, idx_saldo_saidas) calculados como (numerador / base_entradas|saidas) × 100, onde base = Σ v_bc por direção. Se base == 0, índice retorna None (não 0.00). Arredondamento HALF_UP 0.01. Variantes _ibs/_cbs mantêm tributo. Sinal preservado em idx_saldo (positivo = crédito, negativo = déficit). | SPEC_BUSINESS_RULES §6.2; precisão fiscal Decimal (nunca float). Divisão-por-zero honra desconhecimento vs. falsear arredondamento. | TRAVADA (base v_bc PENDENTE-SME: confirmar vs. gross_value; sinal PENDENTE-SME) |
+| **R17: Tabela de conformidade com precedência fixa (DATA PRIMEIRO)** | Conformidade é função de (issue_date, reason, tax_regime, cfop) com tabela de decisão de precedência (EXATA): (1) issue_date ausente → NAO_AVALIADO/DATA_AUSENTE; (2) issue_date < 2026-01-01 → NAO_AVALIADO/PRE_2026; (3) reason UNKNOWN_DIRECTION → NAO_AVALIADO/DIRECAO_DESCONHECIDA; (4a) reason EXCLUDED_CFOP + CFOP 7.1–7.8 (4 dígitos, começa "7" não "79") → CONFORME/EXPORTACAO_IMUNE; (4b) reason EXCLUDED_CFOP demais → NAO_AVALIADO/NAO_COMERCIAL; (5) reason INBOUND/OUTBOUND → CONFORME/DESTAQUE_PRESENTE; (6) reason NO_HIGHLIGHT por regime: SIMPLES_NACIONAL → CONFORME/REGIME_SIMPLES; RPA → INCONFORMIDADE/RPA_SEM_DESTAQUE; SIMPLES_EXCESSO → INCONFORMIDADE/SIMPLES_EXCESSO_SEM_DESTAQUE; MEI → NAO_AVALIADO/REGIME_MEI; UNKNOWN → NAO_AVALIADO/REGIME_DESCONHECIDO. | SPEC_BUSINESS_RULES §5; LC 214/2025 (regra de regime e vigência a partir de 2026). Sem whitelist adicional de CFOP — consome reason puro de F0.7a (ADR 0009). Inspeção de CFOP 7.xxx apenas para separar exportação imune de não-comercial. MEI conservador (NAO_AVALIADO) até confirmação SME. | TRAVADA (tabela completa em ADR 0010 §3) |
+| **R18: Fonte única "comercial" = RtcReason** | Conformidade não reinventa whitelist de CFOP — confia no resultado de F0.7a (classify_rtc_impact). RtcReason já validou CFOP excluído (R2) e sem destaque (R4). F0.7b interpreta e aplica lógica de regime. | Separação de responsabilidades; evita duplicação lógica. F0.7a é puro impacto; F0.7b é conformidade. | TRAVADA |
+| **R19: Mapeamento CRT → TaxRegime** | Parser F1.5 lê campo CRT (Código de Regime Tributário) de NF-e e mapeia direto: CRT 1 → SN, CRT 2 → SIMPLES_EXCESSO, CRT 3 → RPA, CRT 4 → MEI. Se campo ausente → UNKNOWN. NF-e não carrega opSimpNac (operação Simples Nacional); contrato com SME autoriza mapeamento direto de CRT=2 → SIMPLES_EXCESSO. | Contrato F1.5/SME. NF-e OM (Manual de Orientação da Nota Fiscal Eletrônica). | PENDENTE-SME (CRT=2 realmente SIMPLES_EXCESSO? há outro campo?) |
+| **R20: MEI conservador = NAO_AVALIADO** | Microempreendedor Individual (MEI, TaxRegime.MEI) é marcado em conformidade como NAO_AVALIADO/REGIME_MEI até SME fiscal confirmar se é obrigado a descontar IBS/CBS (como RPA) ou se é regime de não-incidência (como Simples Nacional). Se confirmado = Simples Nacional, regra muda para CONFORME/REGIME_SIMPLES. | Precaução: MEI é regime novo na RTC. Sem atualização de lei ou circulares, standby conservador. | PENDENTE-SME (MEI é RPA-like ou SN-like?) |
+| **R21: UNKNOWN regime = NAO_AVALIADO** | Se regime de um documento é UNKNOWN (parser não conseguiu mapear CRT, ou campo ausente), conformidade retorna NAO_AVALIADO. Não tenta inferência (ex.: por UF ou setor). | Fail-closed: sem informação, suspende avaliação. | TRAVADA |
+| **R22: Apuração por item (padrão) vs. doc-level (CT-e)** | Padrão: apura por item, agregando creditos/debitos de cada um. CT-e (Conhecimento de Transporte): se `fiscal_document.items == ()` (sem itens detalhe), apura em nível de documento (usa v_ibs/v_cbs/v_bc do cabeçalho). Preserva crédito de frete. | CT-e Sefaz: pode ter taxa agregada no cabeçalho, sem itens detalhe. Sem apuração doc-level, perde frete. | TRAVADA |
+| **R23: Apuração = função pura, sem dedup/seleção de período** | Função `apurar(items: list[FiscalItem], document: FiscalDocument, tax_regime: TaxRegime) → Apuracao` toma lista como-é (sem filtrar duplicatas, sem validar janela de período). Caller (repositório ou serviço) responsável por dedup e seleção. Engine confia no conjunto. | Separação: engine não conhece lógica de aplicação (dedup, período). Repositório valida antes de chamar. | TRAVADA |
+| **R24: Engine puro — sem IO, ORM, Pydantic direto** | Apuração e conformidade vivem em `/backend/fiscal_engine/` como dataclasses frozen+slots, Decimal sempre, sem FastAPI/SQLAlchemy. Conversão (domínio ↔ ORM) fica na camada de repositório do backend. | SPEC_BUSINESS_RULES premissa 1 (motor puro). Reutilizável em testes, CLI, multi-tenant. | TRAVADA |
 
 ---
 
@@ -195,10 +211,14 @@ como "conformidade OK" (imunidade legítima) ou "INCONFORMIDADE-esperada"
 
 ## Versionamento
 
-- **Versão:** 1.0 (F0.7a final)
+- **Versão:** 2.0 (F0.7a+F0.7b)
 - **Data:** 2026-06-30
-- **Decisão arquitetural:** ADR 0009 (Modelo de impacto RTC)
-- **Implementação:** `/workspace/backend/fiscal_engine/impact.py`,
+- **Decisões arquiteturais:** ADR 0009 (Modelo de impacto RTC), ADR 0010 (Apuração e conformidade IBS/CBS)
+- **Implementação — F0.7a:** `/workspace/backend/fiscal_engine/impact.py`,
   `/workspace/backend/fiscal_engine/models.py`, `/workspace/backend/fiscal_engine/enums.py`
+- **Implementação — F0.7b:** `/workspace/backend/fiscal_engine/apuracao.py`,
+  `/workspace/backend/fiscal_engine/conformity.py`
 - **Testes:** `/workspace/backend/tests/fiscal_engine/test_domain.py`,
-  `/workspace/backend/tests/fiscal_engine/test_impact.py` (cobertura 100%)
+  `/workspace/backend/tests/fiscal_engine/test_impact.py`,
+  `/workspace/backend/tests/fiscal_engine/test_apuracao.py`,
+  `/workspace/backend/tests/fiscal_engine/test_conformity.py` (cobertura 100%)

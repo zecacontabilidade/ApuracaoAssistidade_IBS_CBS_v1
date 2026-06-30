@@ -306,3 +306,112 @@ tipos; a conversão (domínio ↔ ORM) fica na camada de repositório do `backen
 no engine. A regra de impacto (INBOUND→CREDIT / OUTBOUND→DEBIT / CFOP excluído→NEUTRAL —
 SPEC_XML_MAPPING_v2) e o cálculo de apuração (SPEC_BUSINESS_RULES §6) são do engine; o
 banco apenas guarda o resultado e o snapshot de parâmetros.
+
+## 7. Pendências de data-model (F0.7b resultado, migrations futuras)
+
+A implementação de F0.7b entrega tipos puros no `fiscal_engine` (apuração, conformidade,
+índices); as tabelas de persistência estão **planejadas mas não migradas** nesta fatia.
+O engenheiro-dados criará as migrations em fatia futura. Abaixo, os **GAPs conhecidos**
+para implementação:
+
+### 7.1 Tabela `apuracoes` — novos campos para F0.7b
+
+Colunas a adicionar (migration futura) — campos FLAT (sem classe separada de índices):
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `creditos_ibs` | `numeric` | Σ v_ibs onde `rtc_impact == CREDIT` |
+| `creditos_cbs` | `numeric` | Σ v_cbs onde `rtc_impact == CREDIT` |
+| `debitos_ibs` | `numeric` | Σ v_ibs onde `rtc_impact == DEBIT` |
+| `debitos_cbs` | `numeric` | Σ v_cbs onde `rtc_impact == DEBIT` |
+| `saldo_ibs` | `numeric` | creditos_ibs - debitos_ibs |
+| `saldo_cbs` | `numeric` | creditos_cbs - debitos_cbs |
+| `creditos` | `numeric` | creditos_ibs + creditos_cbs (agregado, só para exibição) |
+| `debitos` | `numeric` | debitos_ibs + debitos_cbs (agregado, só para exibição) |
+| `saldo` | `numeric` | saldo_ibs + saldo_cbs (agregado, só para exibição) |
+| `base_entradas` | `numeric` | Σ v_bc para INBOUND (universo de crédito) |
+| `base_saidas` | `numeric` | Σ v_bc para OUTBOUND (universo de débito) |
+| `idx_credito_entradas` | `numeric` | Índice de crédito de entradas (agregado) — None → NULL |
+| `idx_debito_saidas` | `numeric` | Índice de débito de saídas (agregado) — None → NULL |
+| `idx_saldo_saidas` | `numeric` | Índice de saldo (agregado) — com sinal — None → NULL |
+| `idx_saldo_saidas_ibs` | `numeric` | Índice de saldo IBS (por tributo) — com sinal — None → NULL |
+| `idx_saldo_saidas_cbs` | `numeric` | Índice de saldo CBS (por tributo) — com sinal — None → NULL |
+| `conforme_count` | `integer` | Contagem de unidades CONFORME (por item/doc-level) |
+| `inconformidade_count` | `integer` | Contagem de unidades INCONFORMIDADE |
+| `nao_avaliado_count` | `integer` | Contagem de unidades NAO_AVALIADO |
+| `documentos_count` | `integer` | Total de documentos apurados |
+| `itens_count` | `integer` | Total de unidades aferíveis (itens ou doc-level) |
+
+**Nota — Agregados (NUNCA liquidação):**
+- `creditos`, `debitos`, `saldo` = soma IBS+CBS; existem apenas para **exibição e insumo de índice**.
+- `idx_credito_entradas`, `idx_debito_saidas`, `idx_saldo_saidas` = índices agregados (exibição).
+- **Liquidação fiscal exige usar saldo_ibs + saldo_cbs separados**, nunca agregado.
+- **Apenas `idx_saldo_saidas` tem variante por tributo** (`idx_saldo_saidas_ibs`, `idx_saldo_saidas_cbs`); crédito/débito não têm.
+
+**Recomendação:** Engenheiro-dados deve derivar enums PG (CHECK) do StrEnum do fiscal_engine
+para evitar drift (fonte única).
+
+### 7.2 Tabela `fiscal_document_items` — novos campos para F0.7b
+
+Colunas a adicionar (migration futura):
+
+| Coluna | Tipo | Descrição |
+|---|---|---|
+| `conformity` | `text enum` | CONFORME / INCONFORMIDADE / NAO_AVALIADO (corresponde ao enum `Conformity`) |
+| `conformity_reason` | `text enum` | Razão de conformidade (11 valores, enum `ConformityReason`): DATA_AUSENTE, PRE_2026, DIRECAO_DESCONHECIDA, NAO_COMERCIAL, EXPORTACAO_IMUNE, DESTAQUE_PRESENTE, REGIME_SIMPLES, REGIME_MEI, REGIME_DESCONHECIDO, RPA_SEM_DESTAQUE, SIMPLES_EXCESSO_SEM_DESTAQUE |
+
+**Nota:** Coluna `rtc_impact` (saída de F0.7a: CREDIT/DEBIT/NEUTRAL) já existe.
+
+**Recomendação:** Engenheiro-dados deve DERIVAR os enums PG (CHECK ou tipo ENUM) do StrEnum
+do fiscal_engine (`enums.py`) — fonte única, zero drift.
+
+### 7.3 Estrutura de lista de inconformidades
+
+Não há tabela específica nesta versão. Opções para F1.0/F1.x:
+
+- **Opção A (tabela-filha):** `inconformidades` (PK uuid, FK apuracao_id, item_number ou item_id, reason, ...) — append-only para auditoria.
+- **Opção B (JSONB):** `apuracoes.inconformidades_snapshot` → array de { item_number, reason, description, detected_at, ... }.
+- **Opção C (derivado):** Query `fiscal_document_items` com `WHERE apuracao_id IN (...) AND conformity = 'INCONFORMIDADE'`.
+
+Decidir em fatia de repositório (F1.0+).
+
+### 7.4 Política de agregados (IMPORTANTE — LGPD e precisão fiscal)
+
+- Agregados (`creditos`, `debitos`, `saldo` — nomes reais do engine) existem **apenas como derivado de exibição** e insumo de cálculo de índice.
+- **Nunca aparecem em liquidação fiscal:** o fisco exige desagregação IBS/CBS.
+- **Auditoria/rastreabilidade:** campos booleanos (ex., `aggregates_computed`) podem marcar quando agregado foi recalculado (pós-SME ou pós-update de regra).
+
+### 7.5 Validação adicional antes de migration
+
+Antes de implementar as colunas acima, engenheiro-dados deve:
+
+1. **Confirmar com SME fiscal:**
+   - Base de cálculo: v_bc ou gross_value? (Adotado v_bc §2.3; ajuste em F3.6 se SME pedir.)
+   - Sinal do idx_saldo_saidas*: positivo = crédito, negativo = déficit? (Adotado sinal; validar.)
+   - MEI: regime distinto de SN? (Hoje NAO_AVALIADO/REGIME_MEI conservador.)
+   - CRT=2 → SIMPLES_EXCESSO? Outro mapeamento?
+   - UNKNOWN regime: há inferência ou fica NAO_AVALIADO?
+   - Exportação 7.1xx–7.8xx (EXPORTACAO_IMUNE) vs. 7.9xx (NAO_COMERCIAL): conformidade esperada?
+
+2. **Confirmar com arquiteto:**
+   - Agregados compatíveis com soft-delete (se apuração_id referenciada for deletada)?
+   - RLS: fiscal_document_items já tem organization_id denormalizado. apuracoes também. indices?
+   - Índices: aceitar NULL em div-zero, ou usar -999 / sentinel?
+
+3. **Testes de migration:** criar fixture de dados antigos, validar upcast sem perda.
+
+---
+
+## Convenção de nomenclatura para tipos puros (fiscal_engine)
+
+Os tipos puros do motor (`Apuracao`, `Conformity`, `ConformityReason`, etc.) vivem em
+`/backend/fiscal_engine/` (ADR 0004). Campos são `snake_case`. Enums são **StrEnum**
+(valores textuais = nomes, em MAIUSCULAS — ex.: `Conformity.CONFORME`, `ConformityReason.DATA_AUSENTE`).
+
+Conversão PEP 586 (dataclass → ORM) fica na camada de repositório, nunca no engine.
+
+**Importante (LGPD/precisão fiscal):**
+- Engenheiro-dados deve derivar enums PG (tipo ENUM ou CHECK) do StrEnum do fiscal_engine
+  (`/workspace/backend/fiscal_engine/enums.py`) — fonte única de verdade.
+- Evita drift entre código e banco: quando um novo valor entra no enum Python, o engenheiro
+  atualiza a migration PG refletindo exatamente os mesmos valores.

@@ -23,6 +23,26 @@ from fiscal_engine.models import FiscalDocument, FiscalItem
 # Chave de acesso fictícia (44 dígitos) — claramente sintética.
 SYNTHETIC_ACCESS_KEY = "0" * 43 + "1"
 
+# -----------------------------------------------------------------------------
+# Datas-âncora da vigência RTC (LC 214/2025): o regime IBS/CBS inicia em 2026.
+# Usadas pela conformidade (F0.7b) para classificar documentos fora de vigência
+# como NAO_AVALIADO (DATA_AUSENTE / PRE_2026).
+# -----------------------------------------------------------------------------
+RTC_VIGENCIA = date(2026, 1, 1)  # primeiro dia de vigência (CONFORME se aplica)
+PRE_RTC = date(2025, 12, 31)  # último dia anterior — força PRE_2026
+
+# Regimes em que SAÍDA comercial sem destaque é INCONFORMIDADE (F0.7b).
+REGIMES_INCONFORMES = (TaxRegime.RPA, TaxRegime.SIMPLES_EXCESSO)
+
+
+def synthetic_access_key(suffix: int) -> str:
+    """Chave de acesso fictícia de 44 dígitos com sufixo DISTINTO.
+
+    Permite múltiplos documentos sintéticos com chaves diferentes (ex.: testes de
+    multi-documento e de NÃO-deduplicação). LGPD: 100% inventada, NUNCA real.
+    """
+    return str(suffix).rjust(44, "0")
+
 
 @pytest.fixture
 def make_item() -> Callable[..., FiscalItem]:
