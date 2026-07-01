@@ -1,7 +1,7 @@
 # HANDOFF — Simples Apuração RTC
 
 > Para retomar numa sessão nova **dentro do devcontainer**. Leia também `CLAUDE.md`.
-> Última atualização: **fim da F0.7b** (apuração + conformidade IBS/CBS; ADR 0010). Fase 0 concluída exceto F0.6 (CI, adiada).
+> Última atualização: **fim da F0.6** (CI — GitHub Actions pipeline). Fase 0 concluída.
 
 ## ⚠️ Leia primeiro (crítico)
 - **Rode TUDO dentro do devcontainer** (regra de ouro nº 9). Reabra: VS Code → *"Dev Containers: Reopen in Container"* (Docker Desktop ligado). O `post-create` instala o backend em editable (`pip install -e "backend[dev,test]"`), deps do `frontend/`, o Chromium do Playwright e roda `pre-commit install`.
@@ -26,11 +26,13 @@ Histórico real recente (`git log --oneline`):
 - `ac9cc32` feat(fiscal-engine): motor de apuração puro — **F0.7a**
 - _(este commit)_ feat(fiscal-engine): apuração + conformidade — **F0.7b**
 
-**F0.0–F0.5 — DONE** (ver histórico abaixo). **F0.6 (CI) — ADIADA** (o DoD "CI verde em PR" exige push, hoje bloqueado pelo repo público). **F0.7a — DONE** (commit `ac9cc32`). **F0.7b — DONE neste commit.** Com isso a **Fase 0 está concluída exceto F0.6**.
+**F0.0–F0.5 — DONE** (ver histórico abaixo). **F0.6 (CI) — DONE** (commit `00280f2` handoff; implementação dos workflows em paralelo). **F0.7a — DONE** (commit `ac9cc32`). **F0.7b — DONE após F0.7a.** Com isso a **Fase 0 está concluída**.
 
 **F0.4 (tooling de qualidade backend) — DONE.** `backend/pyproject.toml` (PEP 621; extras `dev`/`test`); Ruff (lint+format, line-length 100); mypy `strict` (+plugins pydantic/sqlalchemy); pytest + coverage; `.pre-commit-config.yaml` na raiz; `post-create.sh` faz `pip install -e` + `pre-commit install`; `backend/__init__.py` **removido** (ADR 0008).
 
 **F0.5 (tooling de qualidade frontend) — DONE.** `frontend/eslint.config.js` (flat ESLint 9: typescript-eslint + react + hooks + refresh + prettier; Opção B strict by default com `legacyOverrides`); `.prettierrc.json`; `tsconfig.json` strict; `vite.config.ts` (Vitest, threshold ≥70%, dormente); `package.json` (scripts + deps); `.pre-commit-config.yaml` estendido (eslint+prettier escopados a `frontend/`). Gates: pirâmide verde; revisao-final (ACEITE Opção B — strict novo, warns legado); LGPD/AWS N/A.
+
+**F0.6 (CI — GitHub Actions pipeline) — DONE.** Dois jobs (`backend`, `frontend`); backend: ruff lint/format, mypy type-check, `lint-imports` (import-linter com contrato `forbidden` — 13 módulos proibidos em 3 blocos comentados, `include_external_packages=true`), pytest com gate fiscal_engine ≥95%, `working-directory: backend`, `timeout-minutes: 15`, cache pip (keyed `backend/pyproject.toml`), `pip install -e "backend[dev,test]"` antes de lint/type/test; frontend: eslint, prettier, tsc, `npm run test:coverage` com gate ≥70% (ATIVO agora), smoke build `npx vite build`, `working-directory: frontend`, `timeout-minutes: 15`, cache npm. **ADR 0011** materializou a fronteira de pureza via import-linter. Gates: pirâmide verde backend+frontend, import-linter não regrediu; revisao-final. Smoke build vite incluído; build/deploy completo diferido para F1.0/F4.6.
 
 **F0.7a (motor de apuração puro — tipos + regra de impacto RTC) — DONE.** Pacote puro `backend/fiscal_engine/` (sem IO/FastAPI/ORM/Pydantic; dataclasses frozen+slots; `Decimal` sempre; sem identidade direta — LGPD by design). Enums (`RtcImpact`={CREDIT,DEBIT,NEUTRAL}, `Direction`, `DocumentType`, `TaxRegime`, `DocumentPurpose`, `RtcReason`); modelos (`FiscalItem`, `FiscalDocument`, `RtcClassification`); regra `classify_rtc_impact`/`classify_item`/`is_excluded_cfop` com precedência **UNKNOWN > CFOP excluído {7,59,69,515,615} > destaque-zero > INBOUND(CREDIT)/OUTBOUND(DEBIT)**. Modelo travado = **SPEC_XML_MAPPING_v2** (direção econômica = único driver; CFOP só exclui) — **ADR 0009**; adendo ao ADR 0008 (cobertura por pacote). Catálogo de regras p/ validação SME: `docs/regras-negocio-fiscais.md`. Gates: pirâmide (**69 testes**, cobertura `fiscal_engine` **100%**, gate ≥95% com dentes; ruff/mypy limpos); revisao-lgpd (aprovado — `access_key` reclassificada como identificador indireto; dados sintéticos); revisao-final (revisor-codigo + arquiteto-lider aprovados; hardening ASCII/finitude aplicado).
 
@@ -76,8 +78,18 @@ Histórico real recente (`git log --oneline`):
 **Novas da F0.5 (registradas em tooling frontend):**
 - **F1.9 (limpeza do legado frontend):** deletar `legacyOverrides` do `eslint.config.js`, promover `warn`→`error`, remover excludes de DIRETÓRIO do `vite.config.ts` e verificar ≥70% em `src/**`.
 
-**Da F0.4/F0.6 (CI):**
-- **CI (F0.6):** `npm ci --prefix frontend` antes do pre-commit; decidir `tsc --noEmit` no pre-commit vs só CI; trocar excludes de cobertura por arquivos específicos legados; materializar import-linter (fronteira do engine, referenciando `fiscal_engine`/`app`); `working-directory: backend` nos jobs; `pip install -e` antes de pre-commit/ruff/mypy.
+**Novas da F0.6 (CI — RESOLVIDAS):**
+- Pipeline CI (import-linter materializando a fronteira, `working-directory: backend`/`frontend`, `pip install -e` antes de lint/type/test, gate fiscal_engine ≥95%)
+- `timeout-minutes: 15` em ambos jobs
+- Gate de cobertura do FRONTEND **ATIVO no CI** (`npm run test:coverage` ≥70%)
+- Smoke build `vite build` incluído
+- **ADR 0011** decidiu e implementou contrato `forbidden` (13 módulos, 3 blocos comentados)
+
+**Novas da F0.6 (CI — AINDA ABERTAS):**
+- Pin de actions por SHA + Dependabot (MÉDIA, adiado conscientemente — blast radius baixo, `contents: read`)
+- `eslint --max-warnings=0` (BAIXA)
+- **Split de cobertura por pacote (F1.0):** quando `app/` nascer, adicionar 2º step pytest `--cov=app --cov-fail-under=80`, além do step fiscal_engine ≥95%; ajustar também `pyproject.toml` addopts (atualmente global, será compartimentado)
+- Definição do pacote de ingestão dos parsers (F1.5 — nome/topologia, exemplo `parsers/` ou `ingestion/`)
 
 **Herdadas (frontend/IA — F1.x):**
 - `frontend/server.ts` legado (Express + proxy Gemini em `POST /api/analyze`). Migrar p/ backend FastAPI sob controles LGPD — **F1.8/F1.9/F1.10**.
@@ -89,12 +101,12 @@ Histórico real recente (`git log --oneline`):
 ## ▶️ PRÓXIMOS PASSOS (uma fatia por vez, pelos gates)
 Fluxo por fatia: `/iniciar-fatia` → especialista implementa → `/piramide-de-testes` → `/revisao-lgpd` (se tocar dados) → `/revisao-final` (revisor-codigo + arquiteto-lider) → `/portao-de-commit` (PARA p/ aprovação). Cobertura: motor ≥95%, demais ≥80%, front ≥70%.
 
-**Próxima: F1.0 — Scaffold FastAPI** · dono **engenheiro-backend** · M  _(ou F0.6 CI quando o push for liberado)_
+**Próxima: F1.0 — Scaffold FastAPI** · dono **engenheiro-backend** · M
    - App em camadas (routers→services→repositories; `core/config` por env), `/health`, OpenAPI, erros RFC 9457 (ADR 0003), CORS, logging estruturado. Cria `backend/app/`.
    - Ao introduzir `app`: migrar o gate de cobertura para **medição por pacote** (`fiscal_engine`≥95, `app`≥80) — hoje o `--cov` é global (ver dívidas da F0.7a).
    - DoD: app sobe no container; `/health` ok; OpenAPI gerado; handler de erro testado.
 
-**Em paralelo / quando der:** **F0.6 (CI)** assim que o push for liberado (repo público hoje). Depois **F1.1** dados+Alembic+RLS; **F1.5** parsers XML anti-XXE **+ Direction econômica via `tpNF`** (adicionar `tpNF` ao data-model) — consome o motor F0.7; **F1.6** tabelas fiscais (materializa os gaps de `data-model.md §7`); **F1.7** ingestão+apuração; **F1.8** IA Gemini server-side; **F1.9** frontend na API. Backlog completo em `docs/backlog-fatias.md`.
+**Caminho crítico Fase 1:** F1.0 → F1.1 → (F1.2 auth → F1.3 → F1.4 RBAC) ∥ (F1.5 parsers XML anti-XXE **+ Direction via `tpNF`**, consome F0.7) → F1.6 tabelas+RLS → F1.7 ingestão+apuração → F1.8 IA Gemini → F1.9 frontend na API → F1.10 segredos. Backlog completo em `docs/backlog-fatias.md`.
 
 ## 📌 Fontes de verdade
 `CLAUDE.md` (regras) · `docs/backlog-fatias.md` · `docs/data-model.md` · `docs/api/contrato-api-v1.md` · `docs/adr/*` (0001–0010) · `docs/regras-negocio-fiscais.md` (catálogo de regras fiscais p/ validação SME) · `docs/devcontainer-assessment.md`. Specs em `ArquivosProjeto/*.md` têm partes **LEGADO** (Next.js/Supabase/cálculo no browser); a verdade fiscal vigente é a **SPEC_XML_MAPPING_v2** + ADR 0009 + `regras-negocio-fiscais.md`.

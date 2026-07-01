@@ -1,11 +1,18 @@
 # ADR 0004 — Reorganização do repositório em `backend/` + `frontend/`
 
-- **Status:** Aceito
+- **Status:** Aceito (com **supersessão parcial** — ver ⚠️ abaixo)
 - **Data:** 2026-06-27
 - **Decisores:** arquiteto-lider (com devops-finops)
 - **Relacionados:** `.devcontainer/post-create.sh`, `docs/devcontainer-assessment.md`,
   [ADR 0008](0008-layout-de-pacote-e-cwd-de-tooling-do-backend.md) (detalha a convenção de
   namespace top-level e cwd canônico /workspace/backend)
+
+> ⚠️ **Supersessão parcial (ADR 0011):** A topologia que coloca parsers (lxml) e tipos
+> Pydantic **dentro** de `fiscal_engine` está **superada**. Parsers vivem em pacote de
+> ingestão separado (F1.5); `lxml` e `pydantic` são **proibidos** no engine pela
+> fronteira de import-linter. Ver [ADR 0011 §Reconciliação](0011-fronteira-de-pureza-do-engine-imposta-por-ci.md#reconciliação-com-a-adr-0004-supersessão-parcial)
+> para detalhes. O restante da topologia (monorepo, `fiscal_engine` irmão de `app`,
+> direção `app → fiscal_engine` enforçada) permanece válido.
 
 ## Contexto
 
@@ -25,8 +32,9 @@ Adotar **monorepo** com a seguinte topologia de alto nível:
 /
 ├── backend/
 │   ├── app/                 # FastAPI: routers, services, repositories, core/config
-│   ├── fiscal_engine/       # MOTOR FISCAL PURO: domínio + apuração + parsers (lxml)
-│   │                        # sem imports de FastAPI/SQLAlchemy/IO de rede
+│   ├── fiscal_engine/       # MOTOR FISCAL PURO: domínio + apuração
+│   │                        # ⚠️ SEM parsers (lxml) — vivem em pacote de ingestão (F1.5)
+│   │                        # sem imports de FastAPI/SQLAlchemy/lxml/Pydantic/IO de rede
 │   ├── alembic/             # migrations
 │   ├── tests/               # pytest (unit do engine, integração da API+DB)
 │   ├── pyproject.toml / requirements.txt
@@ -40,9 +48,9 @@ Adotar **monorepo** com a seguinte topologia de alto nível:
 ```
 
 - O **motor fiscal** (`backend/fiscal_engine/`) é um pacote Python **puro**: depende
-  apenas de stdlib + `lxml` (+ tipos Pydantic opcionais), **nunca** de FastAPI, do ORM
-  ou de IO de rede/DB. A direção de dependência (`app` → `fiscal_engine`, nunca o
-  contrário) é **enforçada por lint** (`import-linter` ou regra equivalente) no CI.
+  apenas de stdlib (⚠️ **sem** `lxml`, **sem** tipos Pydantic — ver ADR 0011), **nunca**
+  de FastAPI, do ORM ou de IO de rede/DB. A direção de dependência (`app` → `fiscal_engine`,
+  nunca o contrário) é **enforçada por lint** (`import-linter` no CI).
 - O protótipo atual da raiz é **movido para `frontend/`**; `name: "react-example"` é
   renomeado; o `.env.example` antigo (AI Studio/Gemini) é substituído por
   `backend/.env.example` e `frontend/.env.example` adequados.

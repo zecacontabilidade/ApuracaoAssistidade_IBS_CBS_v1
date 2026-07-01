@@ -1,0 +1,105 @@
+name: CI
+
+# Runs on every push to develop and on PRs targeting develop or main.
+# PRs to main are covered so the gate is enforced before merging from develop.
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop, main]
+
+# FinOps: cancel a queued/running run when a newer commit is pushed to the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: CI only reads the repository.
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Backend: ruff lint/format, mypy, import-linter, pytest (≥95% fiscal_engine)
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache pip wheels keyed on pyproject.toml so a dependency bump busts it.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "./backend[dev,test]"
+
+      - name: Lint (ruff check)
+        working-directory: backend
+        run: ruff check .
+
+      - name: Format check (ruff format)
+        working-directory: backend
+        run: ruff format --check .
+
+      - name: Type check (mypy)
+        working-directory: backend
+        run: mypy .
+
+      - name: Import boundaries (lint-imports)
+        working-directory: backend
+        run: lint-imports
+
+      # pytest addopts already set --cov=fiscal_engine --cov-fail-under=95.
+      - name: Test (pytest)
+        working-directory: backend
+        run: pytest
+
+  # ---------------------------------------------------------------------------
+  # Frontend: eslint, prettier, tsc, vitest
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache npm keyed on package-lock.json for reproducible installs.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies (npm ci)
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint (eslint)
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Format check (prettier)
+        working-directory: frontend
+        run: npm run format:check
+
+      - name: Type check (tsc)
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Test (vitest + coverage ≥70%)
+        working-directory: frontend
+        run: npm run test:coverage
+
+      - name: Build smoke (vite)
+        working-directory: frontend
+        run: npx vite build

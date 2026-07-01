@@ -61,6 +61,8 @@ dev = [
     "ruff>=0.9",
     "mypy>=2.0",
     "pre-commit>=4.0",
+    # Import boundary enforcement — garante que fiscal_engine permanece domínio puro.
+    "import-linter>=2.0",
     # Type stubs — bibliotecas sem py.typed inline
     "types-lxml>=2024.11",
     # SQLAlchemy mypy plugin: incluso no pacote base (sqlalchemy.ext.mypy.plugin)
@@ -205,4 +207,43 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "@(abc\\.)?abstractmethod",
     "\\.\\.\\.\\s*$",  # ellipsis stubs
+]
+
+# =============================================================================
+# IMPORT-LINTER — fronteiras arquiteturais do fiscal_engine
+#
+# Garante que o motor fiscal (domínio puro) NUNCA importe camadas de
+# infraestrutura (app/, workers/) nem bibliotecas de I/O (fastapi, sqlalchemy,
+# lxml, httpx, requests). Isso preserva testabilidade, portabilidade e o
+# princípio de inversão de dependências.
+#
+# Invocação: cd /workspace/backend && lint-imports
+# CI: step "lint-imports" no job backend de .github/workflows/ci.yml.
+# =============================================================================
+[tool.importlinter]
+root_packages = ["fiscal_engine"]
+# Required when any forbidden_module is a third-party package (not just intra-repo).
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "fiscal_engine é puro"
+type = "forbidden"
+source_modules = ["fiscal_engine"]
+forbidden_modules = [
+    # intra-repo (camadas de infra e orquestração)
+    "app",
+    "workers",
+    # libs de I/O e framework web
+    "fastapi",
+    "sqlalchemy",
+    "pydantic",
+    "lxml",
+    "httpx",
+    "requests",
+    # libs de infraestrutura / persistência / fila / cloud
+    "dramatiq",
+    "redis",
+    "alembic",
+    "psycopg",
+    "boto3",
 ]
