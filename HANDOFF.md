@@ -11,11 +11,11 @@
 
 ## 🔒 Regras de Git (obrigatórias)
 - **Branch única `develop`. NUNCA commitar/empurrar na `main`.**
-- **Push de `develop` autorizado (auditado); dados confidenciais purgados.** `origin/develop` existe e é rastreada (push autorizado em auditoria de credenciais). A doc interna "Confidencial" (`ArquivosProjeto/Avaliacao_Tecnica_Simples_Apuracao_RTC.docx`) foi **purgada da história git** (via `git filter-branch`) e do object store, agora é gitignored e local-only — NÃO está no repo público. Policy: **NÃO empurrar enquanto o repo for público** (decisão de privacidade/fork pendente com o arquiteto); **NUNCA `main`**.
-- **Local-only (gitignored), não versionar:** `.claude/agents/`, `.claude/skills/`, `ArquivosProjeto/` (histórico purgado, confidencial local). Só `.claude/settings.json` é versionado.
+- **Push de `develop` autorizado (auditado); dados confidenciais purgados.** `origin/develop` existe e é rastreada (push autorizado em auditoria de credenciais). A doc interna "Confidencial" (`ArquivosProjeto/Avaliacao_Tecnica_Simples_Apuracao_RTC.docx`) foi **purgada da história git** (via `git filter-branch`) e do object store, agora é gitignored e local-only — NÃO está no repo público. Policy: **push de `develop` autorizado após auditoria de credenciais** (feito em 2026-07-01 — `origin/develop` = `8a825f2`; auditoria sem segredos, sem `.claude/agents|skills`). Repo **ainda público** — decisão de privacidade/fork segue pendente com o arquiteto. **NUNCA `main`**.
+- **Local-only (gitignored), não versionar:** `.claude/agents/`, `.claude/skills/`; e em `ArquivosProjeto/` **apenas** o `.docx` confidencial (`Avaliacao_Tecnica_*`, purgado da história) e `PROMPT_CLAUDE_CODE_Time_de_Agentes.md`. ⚠️ **Os demais `.md` de `ArquivosProjeto/` (PRD/ROADMAP/SPEC_*/CONTRIBUTING) SÃO versionados e públicos** (decisão do usuário em 2026-07-01 — "deixar como está"). Em `.claude/`, só `.claude/settings.json` é versionado.
 - **Sem commit/push sem aprovação humana explícita** (skill `portao-de-commit`).
 
-## ✅ Status atual (branch `develop`; `origin/develop` rastreada — NÃO empurrar enquanto público)
+## ✅ Status atual (branch `develop`; sincronizada com `origin/develop` — push autorizado; NUNCA `main`)
 Histórico real recente (`git log --oneline`):
 - `00280f2` docs(handoff): **F0.5** concluída
 - `cc58fb0` chore(frontend): tooling de qualidade — eslint/prettier/tsc/vitest (**F0.5**)
